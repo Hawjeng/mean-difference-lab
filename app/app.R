@@ -76,7 +76,7 @@ server<-function(input,output,session){
  output$survey_info<-renderUI({g<-current_groups();req(g$a,g$b);tagList(hint(paste('變數：',g$v$label,'；單位：',g$v$unit)),p('比較方向：',input$g1,' − ',input$g2,'。缺失值依目前分組與變數逐項排除，0 保留。'))})
  output$survey_summary<-renderTable({g<-current_groups();req(g$a,g$b);data.frame(組別=c(input$g1,input$g2),分組人數=c(g$a$total,g$b$total),有效n=c(g$a$n,g$b$n),缺失=c(g$a$missing,g$b$missing),平均數=c(g$a$mean,g$b$mean),標準差=c(g$a$sd,g$b$sd),中位數=c(g$a$median,g$b$median),Q1=c(g$a$q1,g$b$q1),Q3=c(g$a$q3,g$b$q3))},digits=4)
  survey_test<-reactive({g<-current_groups();req(g$a,g$b);test_summary(g$a,g$b,method=input$sm,alpha=input$sa,tail=input$st,delta0=input$sd0,sigma1=if(input$sm=='z')variance_sigma(input$sv1) else NA,sigma2=if(input$sm=='z')variance_sigma(input$sv2) else NA)})
- output$survey_ci<-renderUI({safe_ui({g<-current_groups();req(g$a,g$b);if(min(g$a$n,g$b$n)<2)stop('每組需至少兩筆有效資料。');HTML(mean_ci_svg(g$a,g$b,c(input$g1,input$g2),input$sa))})})
+ output$survey_ci<-renderUI({safe_ui({g<-current_groups();req(g$a,g$b);if(min(g$a$n,g$b$n)<2)stop('每組需至少兩筆有效資料。');HTML(mean_ci_svg(g$a,g$b,c(input$g1,input$g2),input$sa,method=if(input$sm=='z')'z' else 't',sigma1=if(input$sm=='z')variance_sigma(input$sv1) else NA,sigma2=if(input$sm=='z')variance_sigma(input$sv2) else NA))})})
  output$survey_result<-renderUI({safe_ui({
   r<-survey_test();g<-current_groups();lev<-levene_summary(g$a,g$b);bf<-levene_summary(g$a,g$b,'medianAbs')
   lev_table<-data.frame(方法=c('Levene','Brown–Forsythe'),W=fmt(c(lev$W,bf$W)),p值=pfmt(c(lev$p,bf$p)))
