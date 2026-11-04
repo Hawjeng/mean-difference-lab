@@ -2,7 +2,7 @@
 
 邱皓政統計互動教材，延續「區間估計與假設檢定」，以 Shiny R / Shinylive 在瀏覽器中執行。
 
-網站：https://hawjeng.github.io/mean-difference-lab/  
+網站：https://hawjeng.github.io/mean-difference-lab/
 教材入口：https://hawjeng.github.io/resources.html
 
 ## 教材內容
