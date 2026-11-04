@@ -1,0 +1,30 @@
+{
+  "survey": {
+    "file": "data2.xlsx",
+    "sheet": "Cleaned_Data",
+    "sha256": "b6d8fec8bf150442e51f532948587672126aab480b2aaf874dc507bb99d92ab8",
+    "rows": 713
+  },
+  "textbook": [
+    {
+      "file": "Ch10p274exercise10.3.xlsx",
+      "sha256": "08cc1479b519a12fd6f38099d23a216100906b159faff7f0db58ef2104e96826",
+      "sheet": "exercise10.3"
+    },
+    {
+      "file": "Ch10p266t10.7.xlsx",
+      "sha256": "0c8f90b8b7b9fd6096b4b60b3da356b7e4de7ebf12e82424749eecd75ad9d3f0",
+      "sheet": "t10.7"
+    },
+    {
+      "file": "Ch10p248ex10.1-10.4.xlsx",
+      "sha256": "cbb762cd2d1422e4413e0df1b786ff527e25f9e5c05758271955435898a708a9",
+      "sheet": "ex10.1-ex10.4"
+    },
+    {
+      "file": "Ch10p245age.xlsx",
+      "sha256": "61a4edd145e7c6fe53099e07642170fb5c7590fbefc9b491f0c9b33c0843021b",
+      "sheet": "p245"
+    }
+  ]
+}
