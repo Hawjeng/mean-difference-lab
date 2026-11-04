@@ -2,6 +2,7 @@
 fmt<-function(x,d=4)ifelse(is.finite(x),formatC(x,digits=d,format='f'),'—')
 pfmt<-function(p)ifelse(p<.0001,'< .0001',fmt(p))
 esc<-function(x){x<-gsub('&','&amp;',as.character(x),fixed=TRUE);x<-gsub('<','&lt;',x,fixed=TRUE);gsub('>','&gt;',x,fixed=TRUE)}
+variance_sigma<-function(v){if(length(v)!=1||!is.finite(v)||v<0)stop('請輸入有效的非負母體變異數 σ²；不是母體標準差 σ。');sqrt(v)}
 summarize<-function(x){x<-x[is.finite(x)];list(n=length(x),mean=mean(x),sd=sd(x),median=median(x),q1=unname(quantile(x,.25)),q3=unname(quantile(x,.75)),min=min(x),max=max(x))}
 test_summary<-function(a,b=NULL,method='welch',delta0=0,alpha=.05,tail='two',sigma1=NA,sigma2=NA,r=NA){
  stopifnot(is.finite(alpha),alpha>0,alpha<1,tail%in%c('two','left','right'),method%in%c('z','pooled','welch','paired','one'))
@@ -39,7 +40,7 @@ levene_summary<-function(a,b,center='meanAbs'){
  W<-ssb/(ssw/(a$n+b$n-2));list(W=W,p=pf(W,1,a$n+b$n-2,lower.tail=FALSE),df1=1,df2=a$n+b$n-2)
 }
 levene_raw<-function(x,y,median_center=FALSE){f<-if(median_center)median else mean;a<-summarize(x);b<-summarize(y);a$meanAbs<-summarize(abs(x-f(x)));b$meanAbs<-summarize(abs(y-f(y)));levene_summary(a,b)}
-method_name<-function(m)switch(m,z='Z：母體標準差已知',pooled='Student t：等變異數',welch='Welch t：不假設等變異數',paired='配對 t',one='單樣本 t')
+method_name<-function(m)switch(m,z='獨立 Z：母體變異數已知',pooled='Student t：等變異數',welch='Welch t：不假設等變異數',paired='配對 t',one='單樣本 t')
 hypothesis<-function(r,alternative=FALSE){op<-if(r$tail=='two')if(alternative)'≠' else '=' else if(r$tail=='left')if(alternative)'<' else '≥' else if(alternative)'>' else '≤';paste0(if(alternative)'H₁：' else 'H₀：',if(r$method=='one')'μ' else 'μ₁ − μ₂', ' ',op,' ',fmt(r$delta0))}
 result_frame<-function(results){
  do.call(rbind,lapply(results,function(r)data.frame(方法=method_name(r$method),估計值=fmt(r$difference),SE=fmt(r$se),檢定量=fmt(r$stat),df=if(is.finite(r$df))fmt(r$df,3) else '—',p值=pfmt(r$p),雙側CI下限=fmt(r$lower),雙側CI上限=fmt(r$upper),決策=if(r$reject)'拒絕 H₀' else '未能拒絕 H₀',check.names=FALSE)))

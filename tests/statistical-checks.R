@@ -22,3 +22,8 @@ for(v in s$variables)for(g in v$groups){for(pair in combn(names(g),2,simplify=FA
  a<-g[[pair[1]]];c<-g[[pair[2]]];r<-test_summary(a,c,m);stopifnot(is.finite(r$p),r$p>=0,r$p<=1,r$df>0,r$lower<r$upper)
 }}
 cat('PASS: native R t.test equivalence, one-/two-sided tails, nonzero null, Levene, invalid inputs and all survey group pairs.\n')
+vz<-test_raw(b$uber$a,b$uber$b,'z',sigma1=variance_sigma(4),sigma2=variance_sigma(9))
+close(vz$se,sqrt(4/8+9/8));close(vz$stat,(-1.25)/sqrt(13/8))
+close(variance_sigma(0),0)
+for(bad in list(-1,NA_real_,numeric(0),Inf))stopifnot(inherits(try(variance_sigma(bad),silent=TRUE),'try-error'))
+cat('PASS: known variance inputs, squared-unit conversion, unequal population variances, invalid entries.\n')

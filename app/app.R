@@ -4,7 +4,7 @@ survey<-jsonlite::fromJSON('data/survey.json',simplifyVector=FALSE)
 book<-jsonlite::fromJSON('data/textbook.json',simplifyVector=TRUE)
 selectInput<-function(...)shiny::selectInput(...,selectize=FALSE)
 tails<-c('雙尾：第一組 ≠ 第二組'='two','左尾：第一組 < 第二組'='left','右尾：第一組 > 第二組'='right')
-methods<-c('Welch t（不假設等變異數）'='welch','Student t（等變異數）'='pooled','Z（母體 σ 已知）'='z','配對 t（需配對資料）'='paired')
+methods<-c('Welch t（不假設等變異數）'='welch','Student t（等變異數）'='pooled','獨立樣本 Z（母體變異數 σ² 已知）'='z','配對 t（需配對資料）'='paired')
 card<-function(...)div(class='lab-card',...)
 hint<-function(...)p(class='hint',...)
 diagrams<-function(r)tagList(fluidRow(column(6,div(class='diagram-scroll',HTML(distribution_svg(r)))),column(6,div(class='diagram-scroll',HTML(distribution_svg(r,TRUE))))),hint('兩圖使用相同橫軸。橙色虛線是臨界值，紫色實線是觀察檢定量。α 不是 H₀ 為真的機率，p-value 也不是 H₀ 為真的機率。'))
@@ -17,6 +17,7 @@ show_result<-function(r,labels=c('第一組','第二組')){
   p(sprintf('%s，差異方向為「%s − %s」。觀察差異 = %s，標準誤 SE = %s，%s_obt = %s，p = %s。',tail_label,labels[1],labels[2],fmt(r$difference),fmt(r$se),r$distribution,fmt(r$stat),pfmt(r$p))),
   p(if(r$reject)'在指定顯著水準下，有證據支持所設定的對立假設；統計顯著不表示差異很大，也不表示因果關係。' else '資料尚不足以支持所設定的對立假設，不能解釋為已證明兩組相等。'),
   hint(sprintf('表中 CI 固定為雙側 %.1f%% 差異信賴區間。僅雙尾且使用相同模型時，CI 是否包含 Δ₀ 與 α 檢定相對應。',(1-r$alpha)*100)),
+  if(r$method=='z')div(class='hypothesis',paste0('已知 σ₁² = ',fmt(r$sigma1^2),'，σ₂² = ',fmt(r$sigma2^2),'。SE = √(σ₁²/n₁ + σ₂²/n₂) = √(',fmt(r$sigma1^2),'/',r$a$n,' + ',fmt(r$sigma2^2),'/',r$b$n,') = ',fmt(r$se),'。輸入的是變異數（原始單位的平方），不是標準差。')),
   tags$details(tags$summary('五步驟與公式代入'),tags$ol(
    tags$li(paste('發展假設：',hypothesis(r),'；',hypothesis(r,TRUE))),
    tags$li(paste0('評估設計：',method_name(r$method),'。',if(r$method=='paired')paste0('n = ',r$a$n,' 對，r = ',fmt(r$r),'。') else paste0('n₁ = ',r$a$n,if(!is.null(r$b))paste0('，n₂ = ',r$b$n) else '', '。'))),
@@ -32,28 +33,30 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
   tabPanel('原理與流程',includeHTML('www/lesson.html')),
   tabPanel('課本範例',card(h3('從各節資料開始'),selectInput('example','範例主題',example_choices),
    div(class='book-controls',numericInput('ba','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('bt','檢定方向',tails),numericInput('bd','虛無假設差異 Δ₀',0)),
-   conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',methods[1:3]),conditionalPanel("input.bm == 'z'",div(class='book-controls',numericInput('bs1','已知 σ₁',sqrt(2),min=.0001),numericInput('bs2','已知 σ₂',sqrt(2),min=.0001)))),
+   conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',methods[1:3]),conditionalPanel("input.bm == 'z'",div(class='book-controls',numericInput('bs1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('bs2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入變異數。例如 σ=2 時，這裡應輸入 σ²=4。兩組變異數可以不同。'))),
    uiOutput('book_question'),uiOutput('book_result'),tags$details(tags$summary('原始數據與試算表'),tableOutput('book_raw'),uiOutput('book_links')))),
   tabPanel('調查研究',card(h3('兩組平均數差異'),p('713 筆調查資料，以分組摘要在瀏覽器內計算。每次只比較兩個互斥群組。'),
    div(class='book-controls',selectInput('group','分組方式',setNames(names(survey$groups),vapply(survey$groups,function(g)g$label,character(1)))),selectInput('variable','分析變數',setNames(names(survey$variables),vapply(survey$variables,function(v)v$label,character(1))),selected='B1')),
    div(class='book-controls',selectInput('g1','第一組',survey$groups$zodiac$categories,selected='水瓶座'),selectInput('g2','第二組',survey$groups$zodiac$categories,selected='雙魚座')),
-   div(class='book-controls',selectInput('sm','檢定方法',methods[1:2]),numericInput('sa','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('st','檢定方向',tails),numericInput('sd0','假設差異 Δ₀',0)),
+   div(class='book-controls',selectInput('sm','檢定方法',methods[1:3]),numericInput('sa','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('st','檢定方向',tails),numericInput('sd0','假設差異 Δ₀',0)),
+   conditionalPanel("input.sm == 'z'",div(class='book-controls',numericInput('sv1','第一組已知母體變異數 σ₁²',NA,min=0),numericInput('sv2','第二組已知母體變異數 σ₂²',NA,min=0)),hint('請由題目、外部資料或研究設定給定母體變異數。此處不會把樣本 s² 自動當成已知 σ²；這兩個輸入只用於目前所選變數。')),
    uiOutput('survey_info'),tableOutput('survey_summary'),uiOutput('survey_ci'),uiOutput('survey_result'),
-   tags$details(tags$summary('檢視其餘變數與多重比較'),p('此表固定檢定 Δ₀=0；方向、α 與方法沿用上方設定。Holm 校正將這 13 個變數視為同一檢定家族。'),tableOutput('all_variables'),actionButton('export_results','下載比較結果 CSV',class='btn-primary')),
+   conditionalPanel("input.sm != 'z'",tags$details(tags$summary('檢視其餘變數與多重比較'),p('此表固定檢定 Δ₀=0；方向、α 與方法沿用上方設定。Holm 校正將這 13 個變數視為同一檢定家族。'),tableOutput('all_variables'),actionButton('export_results','下載比較結果 CSV',class='btn-primary'))),
+   conditionalPanel("input.sm == 'z'",hint('各變數的已知母體變異數可能不同，因此 Z 檢定逐一分析目前變數，不將同一組 σ² 套用到所有變數。')),
    tags$details(tags$summary('資料處理與解讀限制'),includeHTML('www/data-notes.html')))),
   tabPanel('習作詳解',card(h3('課後習作：先作答，再展開解答'),p('以課本題意與完整精度重算。預設 α=.05，方向由題目決定。'),
    uiOutput('exercises'),actionButton('answers_download','下載習作詳解 HTML',class='btn-primary'))),
   tabPanel('自行輸入',card(h3('調整摘要數據，觀察檢定圖'),selectInput('mm','檢定方式',methods),
    div(class='book-controls',numericInput('n1','第一組 n₁',8,min=2,step=1),numericInput('m1','第一組平均數',3),numericInput('s1','第一組樣本 s₁',sqrt(16/7),min=0)),
    div(class='book-controls',numericInput('n2','第二組 n₂',8,min=2,step=1),numericInput('m2','第二組平均數',4.25),numericInput('s2','第二組樣本 s₂',sqrt(7.5/7),min=0)),
-   conditionalPanel("input.mm == 'z'",div(class='book-controls',numericInput('sigma1','已知母體 σ₁',sqrt(2),min=0),numericInput('sigma2','已知母體 σ₂',sqrt(2),min=0))),
+   conditionalPanel("input.mm == 'z'",div(class='book-controls',numericInput('variance1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('variance2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入 σ²，不需要先開根號。此檢定使用已知 σ²，與上方樣本標準差 s₁、s₂ 無關。')),
    conditionalPanel("input.mm == 'paired'",numericInput('rho','配對相關 r（由同一配對資料估計）',.912870929,min=-1,max=1,step=.05)),
    div(class='book-controls',numericInput('ma','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('mt','檢定方向',tails),numericInput('md','虛無差異 Δ₀',0)),uiOutput('manual_result'))),
   tabPanel('下載與來源',includeHTML('www/sources.html'))))
 
 server<-function(input,output,session){
  observeEvent(input$group,{cats<-unlist(survey$groups[[input$group]]$categories);updateSelectInput(session,'g1',choices=cats,selected=cats[1]);updateSelectInput(session,'g2',choices=cats,selected=cats[2])})
- observeEvent(input$example,{updateSelectInput(session,'bm',selected='welch');val<-if(input$example=='age')2 else sqrt(2);updateNumericInput(session,'bs1',value=val);updateNumericInput(session,'bs2',value=val)})
+ observeEvent(input$example,{updateSelectInput(session,'bm',selected='welch');val<-if(input$example=='age')4 else 2;updateNumericInput(session,'bs1',value=val);updateNumericInput(session,'bs2',value=val)})
  current_book<-reactive({key<-if(input$example=='age')'age' else 'uber';book[[key]]})
  output$book_question<-renderUI({p(switch(input$example,uber='市區與郊區各 8 位不同上班族的每週 Uber 次數。第一組為市區，第二組為郊區。Z 示範假定兩組母體變異數皆為 2（σ=√2）。',age='管理研究生與心理研究生各 25 筆年齡。原始欄位並列不代表配對，這裡採獨立樣本。Z 示範假定兩組 σ=2。',paired='相同八位上班族分別在市區與郊區工作時的搭車次數，依原始資料逐列配對；差異為市區 − 郊區。',levene='以表 10.7 的兩組 Uber 次數檢驗變異數。Levene 使用平均數，Brown–Forsythe 使用中位數。'))})
  output$book_raw<-renderTable({x<-current_book();data.frame(序=x$a*0+seq_along(x$a),第一組=x$a,第二組=x$b)},digits=4)
@@ -64,14 +67,15 @@ server<-function(input,output,session){
    tagList(div(class='hypothesis','H₀：σ₁² = σ₂²；H₁：σ₁² ≠ σ₂²'),table_html(data.frame(方法=c('Levene（平均數）','Brown–Forsythe（中位數）'),W=fmt(c(l$W,bf$W)),df1=1,df2=l$df2,p值=pfmt(c(l$p,bf$p)),決策=ifelse(c(l$p,bf$p)<input$ba,'拒絕變異數相等','未能拒絕變異數相等'))),p('W 服從右尾 F 參考分配。未顯著不代表已證明變異數相同；不宜只憑前置檢定機械選擇 t 檢定，Welch 可直接作為不假設等變異數的方法。'))
   }else{
    method<-if(input$example=='paired')'paired' else input$bm
-   r<-test_raw(x$a,x$b,method=method,delta0=input$bd,alpha=input$ba,tail=input$bt,sigma1=input$bs1,sigma2=input$bs2)
-   tagList(show_result(r,labels),if(method=='welch')hint('Welch 自由度保留小數。Excel 原檔將自由度取整或先四捨五入統計量時，p 值會略有不同；本介面不為了對齊快取值而降低精度。'),if(input$example!='paired')tags$details(tags$summary('同一資料的三種獨立檢定比較'),table_html(result_frame(lapply(c('z','pooled','welch'),function(m)test_raw(x$a,x$b,method=m,alpha=input$ba,tail=input$bt,delta0=input$bd,sigma1=input$bs1,sigma2=input$bs2))))))
+   r<-test_raw(x$a,x$b,method=method,delta0=input$bd,alpha=input$ba,tail=input$bt,sigma1=if(method=='z')variance_sigma(input$bs1) else NA,sigma2=if(method=='z')variance_sigma(input$bs2) else NA)
+   comparison<-if(input$example!='paired')safe_ui({table_html(result_frame(lapply(c('z','pooled','welch'),function(m)test_raw(x$a,x$b,method=m,alpha=input$ba,tail=input$bt,delta0=input$bd,sigma1=if(m=='z')variance_sigma(input$bs1) else NA,sigma2=if(m=='z')variance_sigma(input$bs2) else NA))))}) else NULL
+   tagList(show_result(r,labels),if(method=='welch')hint('Welch 自由度保留小數。Excel 原檔將自由度取整或先四捨五入統計量時，p 值會略有不同；本介面不為了對齊快取值而降低精度。'),if(input$example!='paired')tags$details(tags$summary('同一資料的三種獨立檢定比較'),comparison))
   }
  })})
  current_groups<-reactive({req(input$g1,input$g2,input$variable);validate(need(input$g1!=input$g2,'請選擇兩個不同群組。'));v<-survey$variables[[input$variable]];list(a=v$groups[[input$group]][[input$g1]],b=v$groups[[input$group]][[input$g2]],v=v)})
  output$survey_info<-renderUI({g<-current_groups();req(g$a,g$b);tagList(hint(paste('變數：',g$v$label,'；單位：',g$v$unit)),p('比較方向：',input$g1,' − ',input$g2,'。缺失值依目前分組與變數逐項排除，0 保留。'))})
  output$survey_summary<-renderTable({g<-current_groups();req(g$a,g$b);data.frame(組別=c(input$g1,input$g2),分組人數=c(g$a$total,g$b$total),有效n=c(g$a$n,g$b$n),缺失=c(g$a$missing,g$b$missing),平均數=c(g$a$mean,g$b$mean),標準差=c(g$a$sd,g$b$sd),中位數=c(g$a$median,g$b$median),Q1=c(g$a$q1,g$b$q1),Q3=c(g$a$q3,g$b$q3))},digits=4)
- survey_test<-reactive({g<-current_groups();req(g$a,g$b);test_summary(g$a,g$b,method=input$sm,alpha=input$sa,tail=input$st,delta0=input$sd0)})
+ survey_test<-reactive({g<-current_groups();req(g$a,g$b);test_summary(g$a,g$b,method=input$sm,alpha=input$sa,tail=input$st,delta0=input$sd0,sigma1=if(input$sm=='z')variance_sigma(input$sv1) else NA,sigma2=if(input$sm=='z')variance_sigma(input$sv2) else NA)})
  output$survey_ci<-renderUI({safe_ui({g<-current_groups();req(g$a,g$b);if(min(g$a$n,g$b$n)<2)stop('每組需至少兩筆有效資料。');HTML(mean_ci_svg(g$a,g$b,c(input$g1,input$g2),input$sa))})})
  output$survey_result<-renderUI({safe_ui({
   r<-survey_test();g<-current_groups();lev<-levene_summary(g$a,g$b);bf<-levene_summary(g$a,g$b,'medianAbs')
@@ -81,7 +85,7 @@ server<-function(input,output,session){
  all_results<-reactive({req(input$g1!=input$g2);keys<-names(survey$variables);out<-lapply(keys,function(k){v<-survey$variables[[k]];a<-v$groups[[input$group]][[input$g1]];b<-v$groups[[input$group]][[input$g2]];if(is.null(a)||is.null(b))return(NULL);tryCatch({r<-test_summary(a,b,method=input$sm,alpha=input$sa,tail=input$st);data.frame(變數=v$label,n1=a$n,n2=b$n,差異=r$difference,t=r$stat,df=r$df,p=r$p)},error=function(e)data.frame(變數=v$label,n1=a$n,n2=b$n,差異=NA,t=NA,df=NA,p=NA))});a<-do.call(rbind,out);a$Holm_p<-p.adjust(a$p,'holm',n=length(keys));a})
  output$all_variables<-renderTable({a<-all_results();a$p<-pfmt(a$p);a$Holm_p<-pfmt(a$Holm_p);a},digits=4)
  observeEvent(input$export_results,{txt<-paste(capture.output(write.csv(all_results(),row.names=FALSE,na='')),collapse='\n');session$sendCustomMessage('download-file',list(content=paste0('\ufeff',txt),name='平均數差異比較.csv',mime='text/csv;charset=utf-8'))})
- output$manual_result<-renderUI({safe_ui({validate(need(input$n1==floor(input$n1)&&input$n2==floor(input$n2),'樣本數必須是整數。'));r<-test_summary(list(n=input$n1,mean=input$m1,sd=input$s1),list(n=input$n2,mean=input$m2,sd=input$s2),method=input$mm,alpha=input$ma,tail=input$mt,delta0=input$md,sigma1=input$sigma1,sigma2=input$sigma2,r=input$rho);show_result(r)})})
+ output$manual_result<-renderUI({safe_ui({validate(need(input$n1==floor(input$n1)&&input$n2==floor(input$n2),'樣本數必須是整數。'));r<-test_summary(list(n=input$n1,mean=input$m1,sd=input$s1),list(n=input$n2,mean=input$m2,sd=input$s2),method=input$mm,alpha=input$ma,tail=input$mt,delta0=input$md,sigma1=if(input$mm=='z')variance_sigma(input$variance1) else NA,sigma2=if(input$mm=='z')variance_sigma(input$variance2) else NA,r=input$rho);show_result(r)})})
  exercises_ui<-function(){
   a<-list(n=36,mean=135,sd=16);b<-list(n=36,mean=127,sd=16)
   i<-test_summary(a,b,'pooled',tail='right');p<-test_summary(a,b,'paired',r=.8,tail='right');z<-test_summary(a,b,'z',sigma1=16,sigma2=16,tail='right')
