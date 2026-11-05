@@ -46,22 +46,30 @@ result_frame<-function(results){
  do.call(rbind,lapply(results,function(r)data.frame(方法=method_name(r$method),估計值=fmt(r$difference),SE=fmt(r$se),檢定量=fmt(r$stat),df=if(is.finite(r$df))fmt(r$df,3) else '—',p值=pfmt(r$p),雙側CI下限=fmt(r$lower),雙側CI上限=fmt(r$upper),決策=if(r$reject)'拒絕 H₀' else '未能拒絕 H₀',check.names=FALSE)))
 }
 svg_text<-function(x,y,label,color='#183d47',size=13,anchor='middle')sprintf('<text x="%.2f" y="%.2f" fill="%s" font-size="%s" text-anchor="%s">%s</text>',x,y,color,size,anchor,esc(label))
-distribution_svg<-function(r,pview=FALSE){
+distribution_svg<-function(r){
  # Exact tail probabilities above; the grid is used only to draw areas.
  pdf<-if(r$distribution=='z')dnorm else function(x)dt(x,r$df)
  hi<-max(4.4,abs(r$stat)+.65,r$critical+.6);xx<-sort(unique(c(seq(-hi,hi,length.out=1401),r$stat,-abs(r$stat),abs(r$stat),-r$critical,r$critical)));dens<-pdf(xx)
- X<-function(x)52+466*(x+hi)/(2*hi);Y<-function(y)224-140*y/max(dens)
- mask<-if(pview){if(r$tail=='two')abs(xx)>=abs(r$stat) else if(r$tail=='left')xx<=r$stat else xx>=r$stat}else{if(r$tail=='two')abs(xx)>=r$critical else if(r$tail=='left')xx<= -r$critical else xx>=r$critical}
- color<-if(pview)'#087cb2' else '#c16a16'
- out<-c(sprintf('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 570 360" role="img" aria-label="%s" style="width:100%%;font-family:Microsoft JhengHei,Arial,sans-serif"><title>%s</title><rect width="570" height="360" fill="white"/>',esc(if(pview)'藍色 p-value 尾機率圖' else '橙色 alpha 拒絕域圖'),esc(paste(hypothesis(r),if(pview)paste('p =',pfmt(r$p)) else paste('alpha =',r$alpha)))),svg_text(285,24,if(pview)'p-value：觀察值及更極端的尾機率' else 'α：事先設定的拒絕域',color,16),svg_text(285,49,hypothesis(r)),svg_text(285,70,paste0(r$distribution,' 分配',if(is.finite(r$df))paste0('，df = ',fmt(r$df,3)) else '')))
- run<-rle(mask);ends<-cumsum(run$lengths);starts<-ends-run$lengths+1
- for(i in which(run$values)){ids<-starts[i]:ends[i];out<-c(out,sprintf('<polygon points="%.2f,224 %s %.2f,224" fill="%s" fill-opacity=".42"/>',X(xx[ids[1]]),paste(sprintf('%.2f,%.2f',X(xx[ids]),Y(dens[ids])),collapse=' '),X(xx[ids[length(ids)]]),color))}
- out<-c(out,sprintf('<polyline points="%s" fill="none" stroke="#344b58" stroke-width="2"/><path d="M52 224 H518" stroke="#344b58"/>',paste(sprintf('%.2f,%.2f',X(xx),Y(dens)),collapse=' ')))
- for(tick in pretty(c(-hi,hi),n=6))if(tick>=-hi&&tick<=hi)out<-c(out,svg_text(X(tick),246,format(tick,trim=TRUE),'#536c76',12))
+ X<-function(x)62+636*(x+hi)/(2*hi);Y<-function(y)245-145*y/max(dens)
+ alpha_mask<-if(r$tail=='two')abs(xx)>=r$critical else if(r$tail=='left')xx<= -r$critical else xx>=r$critical
+ p_mask<-if(r$tail=='two')abs(xx)>=abs(r$stat) else if(r$tail=='left')xx<=r$stat else xx>=r$stat
+ hatch_id<-paste0('alpha-hatch-',gsub('[^A-Za-z0-9]','',paste(r$distribution,r$tail,fmt(r$stat,8),fmt(r$critical,8),r$df)))
+ out<-c(sprintf('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 910 365" role="img" aria-label="α 拒絕域與 p-value 尾機率整合圖" style="width:100%%;font-family:Microsoft JhengHei,Arial,sans-serif"><defs><pattern id="%s" patternUnits="userSpaceOnUse" width="6" height="6"><path d="M-1 1 L1 -1 M0 6 L6 0 M5 7 L7 5" stroke="#c16a16" stroke-width="1.5"/></pattern></defs><rect width="910" height="365" fill="white"/><g transform="translate(0,-25)">',hatch_id),svg_text(430,51,hypothesis(r)))
+ shade<-function(mask,fill,opacity=1){
+  run<-rle(mask);ends<-cumsum(run$lengths);starts<-ends-run$lengths+1;polygons<-character()
+  for(i in which(run$values)){ids<-starts[i]:ends[i];polygons<-c(polygons,sprintf('<polygon points="%.2f,245 %s %.2f,245" fill="%s" fill-opacity="%s"/>',X(xx[ids[1]]),paste(sprintf('%.2f,%.2f',X(xx[ids]),Y(dens[ids])),collapse=' '),X(xx[ids[length(ids)]]),fill,opacity))}
+  polygons
+ }
+ out<-c(out,shade(alpha_mask,'#ed9c38',.24),shade(p_mask,'#087cb2',.32),shade(alpha_mask,paste0('url(#',hatch_id,')')))
+ out<-c(out,sprintf('<polyline points="%s" fill="none" stroke="#344b58" stroke-width="2"/><path d="M62 245 H698" stroke="#344b58"/>',paste(sprintf('%.2f,%.2f',X(xx),Y(dens)),collapse=' ')))
+ ticks<-if(r$distribution=='z')seq(ceiling(-hi*2)/2,floor(hi*2)/2,by=.5) else pretty(c(-hi,hi),n=8)
+ for(tick in ticks)if(tick>=-hi&&tick<=hi)out<-c(out,sprintf('<path class="axis-tick" data-value="%s" d="M%.2f 245 V250" stroke="#536c76"/>',tick,X(tick)),svg_text(X(tick),268,if(r$distribution=='z')fmt(tick,1) else format(tick,trim=TRUE),'#536c76',11))
  cvs<-if(r$tail=='two')c(-r$critical,r$critical) else if(r$tail=='left')-r$critical else r$critical
- for(cv in cvs)out<-c(out,sprintf('<path d="M%.2f 92 V224" stroke="#c16a16" stroke-width="1.6" stroke-dasharray="5 4"/>',X(cv)))
- out<-c(out,sprintf('<path d="M%.2f 88 V224" stroke="#7738b5" stroke-width="2.2"/>',X(r$stat)),svg_text(285,271,paste0(r$distribution,'-statistic（檢定量，非原始分數）')),
- svg_text(285,296,paste0('臨界值 = ',if(r$tail=='two')'±' else if(r$tail=='left')'−' else '',fmt(r$critical),'；α = ',r$alpha),'#c16a16'),svg_text(285,321,paste0(r$distribution,'_obt = ',fmt(r$stat),'；p = ',pfmt(r$p)),'#7738b5'),svg_text(285,345,if(pview)'藍色面積總和 = p-value' else paste0('橙色面積總和 = α',if(r$tail=='two')'；每尾 α/2' else ''),color),'</svg>');paste(out,collapse='')
+ for(cv in cvs)out<-c(out,sprintf('<path d="M%.2f 95 V245" stroke="#c16a16" stroke-width="1.6" stroke-dasharray="5 4"/>',X(cv)))
+ out<-c(out,sprintf('<path d="M%.2f 91 V245" stroke="#7738b5" stroke-width="2.2"/>',X(r$stat)),svg_text(710,250,if(r$distribution=='z')'z' else paste0('t(df=',fmt(r$df,2),' ≈ ',floor(r$df+.5),')'),'#183d47',12,'start'),
+ svg_text(430,295,paste0('臨界值 = ',if(r$tail=='two')'±' else if(r$tail=='left')'−' else '',fmt(r$critical),'；',r$distribution,'_obt = ',fmt(r$stat)),'#7738b5'),
+ sprintf('<rect x="160" y="316" width="24" height="14" fill="#ed9c38" fill-opacity=".24"/><rect x="160" y="316" width="24" height="14" fill="url(#%s)" stroke="#c16a16"/>',hatch_id),svg_text(195,328,paste0('橙色斜線面積 = α = ',r$alpha,if(r$tail=='two')'（每尾 α/2）' else ''),'#c16a16',13,'start'),
+ '<rect x="160" y="345" width="24" height="14" fill="#087cb2" fill-opacity=".32"/>',svg_text(195,357,paste0('藍色底色面積 = p-value = ',pfmt(r$p)),'#087cb2',13,'start'),'</g></svg>');paste(out,collapse='')
 }
 mean_ci<-function(s,alpha=.05,method='t',sigma=NA){
  if(s$n<2)return(c(LL=NA_real_,UL=NA_real_))
