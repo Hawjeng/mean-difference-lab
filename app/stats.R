@@ -41,7 +41,7 @@ levene_summary<-function(a,b,center='meanAbs'){
 }
 levene_raw<-function(x,y,median_center=FALSE){f<-if(median_center)median else mean;a<-summarize(x);b<-summarize(y);a$meanAbs<-summarize(abs(x-f(x)));b$meanAbs<-summarize(abs(y-f(y)));levene_summary(a,b)}
 method_name<-function(m)switch(m,z='獨立 Z：母體變異數已知',pooled='Student t：等變異數',welch='Welch t：不假設等變異數',paired='配對 t',one='單樣本 t')
-hypothesis<-function(r,alternative=FALSE){op<-if(r$tail=='two')if(alternative)'≠' else '=' else if(r$tail=='left')if(alternative)'<' else '≥' else if(alternative)'>' else '≤';paste0(if(alternative)'H₁：' else 'H₀：',if(r$method=='one')'μ' else 'μ₁ − μ₂', ' ',op,' ',fmt(r$delta0))}
+hypothesis<-function(r,alternative=FALSE){op<-if(r$tail=='two')if(alternative)'≠' else '=' else if(r$tail=='left')if(alternative)'<' else '≥' else if(alternative)'>' else '≤';paste0(if(alternative)'H₁：' else 'H₀：',if(r$method=='one')'μ' else 'μ₁ − μ₂', ' ',op,' ',format(r$delta0,trim=TRUE,scientific=FALSE))}
 result_frame<-function(results){
  do.call(rbind,lapply(results,function(r)data.frame(方法=method_name(r$method),估計值=fmt(r$difference),SE=fmt(r$se),檢定量=fmt(r$stat),df=if(is.finite(r$df))fmt(r$df,3) else '—',p值=pfmt(r$p),雙側CI下限=fmt(r$lower),雙側CI上限=fmt(r$upper),決策=if(r$reject)'拒絕 H₀' else '未能拒絕 H₀',check.names=FALSE)))
 }
