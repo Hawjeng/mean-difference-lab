@@ -7,7 +7,7 @@ tails<-c('雙尾：第一組 ≠ 第二組'='two','左尾：第一組 < 第二�
 methods<-c('Welch t（不假設等變異數）'='welch','Student t（等變異數）'='pooled','獨立樣本 Z（母體變異數 σ² 已知）'='z','配對 t（需配對資料）'='paired')
 card<-function(...)div(class='lab-card',...)
 hint<-function(...)p(class='hint',...)
-diagrams<-function(r)tagList(fluidRow(column(6,div(class='diagram-scroll',HTML(distribution_svg(r)))),column(6,div(class='diagram-scroll',HTML(distribution_svg(r,TRUE))))),hint('兩圖使用相同橫軸。橙色虛線是臨界值，紫色實線是觀察檢定量。α 不是 H₀ 為真的機率，p-value 也不是 H₀ 為真的機率。'))
+diagrams<-function(r)tagList(div(class='diagram-scroll',style='max-width:900px;margin:0 auto',HTML(distribution_svg(r))),hint('橙色斜線為 α 拒絕域，藍色底色為 p-value 尾機率；重疊處保留兩種標示。橙色虛線是臨界值，紫色實線是觀察檢定量。α 與 p-value 都不是 H₀ 為真的機率。'))
 table_html<-function(df){heads<-paste0('<th>',esc(names(df)),'</th>',collapse='');rows<-vapply(seq_len(nrow(df)),function(i)paste0('<tr>',paste0('<td>',esc(unlist(df[i,],use.names=FALSE)),'</td>',collapse=''),'</tr>'),character(1));HTML(paste0('<div class="table-scroll"><table><thead><tr>',heads,'</tr></thead><tbody>',paste(rows,collapse=''),'</tbody></table></div>'))}
 safe_ui<-function(expr)tryCatch(expr,error=function(e)div(class='warning',conditionMessage(e)))
 show_result<-function(r,labels=c('第一組','第二組')){
@@ -26,7 +26,7 @@ show_result<-function(r,labels=c('第一組','第二組')){
    tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r))
 }
 example_choices<-c('Uber 搭車：獨立樣本 Z／Student／Welch'='uber','研究生年齡：獨立樣本比較'='age','Uber 搭車：同八人的配對 t'='paired','變異數同質檢驗：Levene 與 Brown–Forsythe'='levene')
-ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css'),tags$script(src='downloads.js')),
+ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=20261105-compact'),tags$script(src='downloads.js')),
  div(class='app-top',a(href='https://hawjeng.github.io/resources.html','← 教學與專案'),a(href='https://hawjeng.github.io/statistical-inference-lab/','區間估計與假設檢定'),a(href='https://github.com/Hawjeng/mean-difference-lab',target='_blank',rel='noopener','GitHub 原始碼')),
  div(class='app-title',p(class='eyebrow','STATISTICS LAB · COMPARING TWO MEANS'),h1('平均數差異檢定'),p('先辨識研究設計，再看標準誤、拒絕域與尾機率。')),
  tabsetPanel(id='main_tab',selected='原理與流程',
@@ -46,12 +46,13 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
    tags$details(tags$summary('資料處理與解讀限制'),includeHTML('www/data-notes.html')))),
   tabPanel('習作詳解',card(h3('課後習作：先作答，再展開解答'),p('以課本題意與完整精度重算。預設 α=.05，方向由題目決定。'),
    uiOutput('exercises'),actionButton('answers_download','下載習作詳解 HTML',class='btn-primary'))),
-  tabPanel('自行輸入',card(h3('調整摘要數據，觀察檢定圖'),selectInput('mm','檢定方式',methods),
-   div(class='book-controls',numericInput('n1','第一組 n₁',8,min=2,step=1),numericInput('m1','第一組平均數',3),numericInput('s1','第一組樣本 s₁',sqrt(16/7),min=0)),
-   div(class='book-controls',numericInput('n2','第二組 n₂',8,min=2,step=1),numericInput('m2','第二組平均數',4.25),numericInput('s2','第二組樣本 s₂',sqrt(7.5/7),min=0)),
-   conditionalPanel("input.mm == 'z'",div(class='book-controls',numericInput('variance1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('variance2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入 σ²，不需要先開根號。此檢定使用已知 σ²，與上方樣本標準差 s₁、s₂ 無關。')),
-   conditionalPanel("input.mm == 'paired'",numericInput('rho','配對相關 r（由同一配對資料估計）',.912870929,min=-1,max=1,step=.05)),
-   div(class='book-controls',numericInput('ma','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('mt','檢定方向',tails),numericInput('md','虛無差異 Δ₀',0)),uiOutput('manual_result'))),
+  tabPanel('自行輸入',card(h3('調整摘要數據，觀察檢定圖'),div(class='manual-method',selectInput('mm','檢定方式',methods)),
+   div(class='manual-data',numericInput('n1','第一組 n₁',8,min=2,step=1),numericInput('m1','第一組平均數',3),numericInput('s1','第一組樣本 s₁',sqrt(16/7),min=0),numericInput('n2','第二組 n₂',8,min=2,step=1),numericInput('m2','第二組平均數',4.25),numericInput('s2','第二組樣本 s₂',sqrt(7.5/7),min=0)),
+   div(class='manual-settings',conditionalPanel("input.mm == 'z'",div(class='manual-variances',numericInput('variance1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('variance2','第二組已知母體變異數 σ₂²',2,min=0))),
+    conditionalPanel("input.mm == 'paired'",numericInput('rho','配對相關 r',.912870929,min=-1,max=1,step=.05)),
+    numericInput('ma','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('mt','檢定方向',tails),numericInput('md','虛無差異 Δ₀',0)),
+   conditionalPanel("input.mm == 'z'",hint('直接輸入已知 σ²，不需要先開根號；Z 檢定與上方樣本標準差 s₁、s₂ 無關。')),
+   conditionalPanel("input.mm == 'paired'",hint('配對相關 r 須由同一批完整配對資料估計。')),uiOutput('manual_result'))),
   tabPanel('下載與來源',includeHTML('www/sources.html'))))
 
 server<-function(input,output,session){
