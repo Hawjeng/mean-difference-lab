@@ -63,10 +63,16 @@ distribution_svg<-function(r,pview=FALSE){
  out<-c(out,sprintf('<path d="M%.2f 88 V224" stroke="#7738b5" stroke-width="2.2"/>',X(r$stat)),svg_text(285,271,paste0(r$distribution,'-statistic（檢定量，非原始分數）')),
  svg_text(285,296,paste0('臨界值 = ',if(r$tail=='two')'±' else if(r$tail=='left')'−' else '',fmt(r$critical),'；α = ',r$alpha),'#c16a16'),svg_text(285,321,paste0(r$distribution,'_obt = ',fmt(r$stat),'；p = ',pfmt(r$p)),'#7738b5'),svg_text(285,345,if(pview)'藍色面積總和 = p-value' else paste0('橙色面積總和 = α',if(r$tail=='two')'；每尾 α/2' else ''),color),'</svg>');paste(out,collapse='')
 }
-mean_ci_svg<-function(a,b,labels=c('第一組','第二組'),alpha=.05,method='t',sigma1=NA,sigma2=NA){
- ss<-list(a,b);sigmas<-c(sigma1,sigma2);half<-vapply(1:2,function(i){s<-ss[[i]];if(method=='z')qnorm(1-alpha/2)*sigmas[i]/sqrt(s$n) else qt(1-alpha/2,s$n-1)*s$sd/sqrt(s$n)},numeric(1));means<-c(a$mean,b$mean);lo<-means-half;hi<-means+half;rg<-range(lo,hi);pad<-max(diff(rg)*.18,.01);rg<-rg+c(-pad,pad);X<-function(x)100+600*(x-rg[1])/diff(rg)
- out<-c('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 235" role="img" aria-label="兩組平均數與各組雙側信賴區間" style="width:100%;font-family:Microsoft JhengHei,Arial,sans-serif">',svg_text(400,25,paste0(fmt((1-alpha)*100,1),'% 各組平均數 ',method,' CI（非差異 CI）')))
- for(i in 1:2){s<-ss[[i]];y<-i*60;col<-if(i==1)'#347f90' else '#7738b5';out<-c(out,svg_text(90,y+4,labels[i],col,13,'end'),sprintf('<path d="M%.2f %s H%.2f M%.2f %s V%s M%.2f %s V%s" stroke="%s" stroke-width="3"/><circle cx="%.2f" cy="%s" r="5" fill="%s"/>',X(lo[i]),y,X(hi[i]),X(lo[i]),y-5,y+5,X(hi[i]),y-5,y+5,col,X(s$mean),y,col),svg_text(X(s$mean),y+25,paste0('M=',fmt(s$mean,2),'，n=',s$n),col,12))}
- for(tick in pretty(rg,n=6))if(tick>=rg[1]&&tick<=rg[2])out<-c(out,svg_text(X(tick),185,format(tick,trim=TRUE),'#536c76',12))
- paste(c(out,svg_text(400,218,'橫軸為所選變數原始單位；請用差異的 CI 與檢定作判斷。','#536c76',12),'</svg>'),collapse='')
+mean_ci<-function(s,alpha=.05,method='t',sigma=NA){
+ if(s$n<2)return(c(LL=NA_real_,UL=NA_real_))
+ half<-if(method=='z')qnorm(1-alpha/2)*sigma/sqrt(s$n) else qt(1-alpha/2,s$n-1)*s$sd/sqrt(s$n)
+ c(LL=s$mean-half,UL=s$mean+half)
 }
+mean_ci_svg<-function(a,b,labels=c('第一組','第二組'),alpha=.05,method='t',sigma1=NA,sigma2=NA){
+ ss<-list(a,b);sigmas<-c(sigma1,sigma2);ci<-vapply(1:2,function(i)mean_ci(ss[[i]],alpha,method,sigmas[i]),numeric(2));lo<-ci['LL',];hi<-ci['UL',];rg<-range(lo,hi);pad<-max(diff(rg)*.18,.01);rg<-rg+c(-pad,pad);X<-function(x)100+600*(x-rg[1])/diff(rg)
+ out<-c('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 285" role="img" aria-label="兩組平均數與各組雙側信賴區間：LL 下限、UL 上限" style="width:100%;font-family:Microsoft JhengHei,Arial,sans-serif">',svg_text(400,25,paste0(fmt((1-alpha)*100,1),'% 各組平均數 ',method,' CI（非差異 CI）')))
+ for(i in 1:2){s<-ss[[i]];y<-80+(i-1)*90;col<-if(i==1)'#347f90' else '#7738b5';out<-c(out,svg_text(90,y+4,labels[i],col,13,'end'),sprintf('<path d="M%.2f %s H%.2f M%.2f %s V%s M%.2f %s V%s" stroke="%s" stroke-width="3"/><circle cx="%.2f" cy="%s" r="5" fill="%s"/>',X(lo[i]),y,X(hi[i]),X(lo[i]),y-5,y+5,X(hi[i]),y-5,y+5,col,X(s$mean),y,col),svg_text(X(lo[i]),y-16,paste0('LL=',fmt(lo[i])),col,12,'end'),svg_text(X(hi[i]),y-16,paste0('UL=',fmt(hi[i])),col,12,'start'),svg_text(X(s$mean),y+25,paste0('M=',fmt(s$mean,2),'，n=',s$n),col,12))}
+ for(tick in pretty(rg,n=6))if(tick>=rg[1]&&tick<=rg[2])out<-c(out,svg_text(X(tick),235,format(tick,trim=TRUE),'#536c76',12))
+ paste(c(out,svg_text(400,268,'LL＝下限，UL＝上限；橫軸為原始單位，請用差異的 CI 與檢定作判斷。','#536c76',12),'</svg>'),collapse='')
+}
+
