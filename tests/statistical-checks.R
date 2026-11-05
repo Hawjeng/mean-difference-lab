@@ -27,3 +27,15 @@ close(vz$se,sqrt(4/8+9/8));close(vz$stat,(-1.25)/sqrt(13/8))
 close(variance_sigma(0),0)
 for(bad in list(-1,NA_real_,numeric(0),Inf))stopifnot(inherits(try(variance_sigma(bad),silent=TRUE),'try-error'))
 cat('PASS: known variance inputs, squared-unit conversion, unequal population variances, invalid entries.\n')
+for(x in list(b$uber$a,b$age$a))for(alpha in c(.05,.01)){
+ a<-summarize(x);ci<-mean_ci(a,alpha);ref<-t.test(x,conf.level=1-alpha)$conf.int
+ close(ci,ref);zci<-mean_ci(a,alpha,'z',3)
+ close(zci,a$mean+c(-1,1)*qnorm(1-alpha/2)*3/sqrt(a$n))
+ svg<-mean_ci_svg(a,a,alpha=alpha)
+ stopifnot(grepl(paste0('LL=',fmt(ci['LL'])),svg,fixed=TRUE),grepl(paste0('UL=',fmt(ci['UL'])),svg,fixed=TRUE))
+}
+stopifnot(all(is.na(mean_ci(list(n=1,mean=5,sd=NA)))))
+stopifnot(all(is.na(mean_ci(summarize(b$uber$a),method='z'))))
+close(mean_ci(summarize(b$uber$a),method='z',sigma=0),rep(mean(b$uber$a),2))
+cat('PASS: group mean t/Z CI endpoints, 95%/99% confidence, SVG labels and unavailable intervals.\n')
+
