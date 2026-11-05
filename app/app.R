@@ -74,7 +74,13 @@ server<-function(input,output,session){
  })})
  current_groups<-reactive({req(input$g1,input$g2,input$variable);validate(need(input$g1!=input$g2,'請選擇兩個不同群組。'));v<-survey$variables[[input$variable]];list(a=v$groups[[input$group]][[input$g1]],b=v$groups[[input$group]][[input$g2]],v=v)})
  output$survey_info<-renderUI({g<-current_groups();req(g$a,g$b);tagList(hint(paste('變數：',g$v$label,'；單位：',g$v$unit)),p('比較方向：',input$g1,' − ',input$g2,'。缺失值依目前分組與變數逐項排除，0 保留。'))})
- output$survey_summary<-renderTable({g<-current_groups();req(g$a,g$b);data.frame(組別=c(input$g1,input$g2),分組人數=c(g$a$total,g$b$total),有效n=c(g$a$n,g$b$n),缺失=c(g$a$missing,g$b$missing),平均數=c(g$a$mean,g$b$mean),標準差=c(g$a$sd,g$b$sd),中位數=c(g$a$median,g$b$median),Q1=c(g$a$q1,g$b$q1),Q3=c(g$a$q3,g$b$q3))},digits=4)
+ output$survey_summary<-renderTable({g<-current_groups();req(g$a,g$b)
+  sigma<-function(v)if(input$sm=='z')tryCatch(variance_sigma(v),error=function(e)NA_real_) else NA_real_
+  ci<-rbind(mean_ci(g$a,input$sa,if(input$sm=='z')'z' else 't',sigma(input$sv1)),mean_ci(g$b,input$sa,if(input$sm=='z')'z' else 't',sigma(input$sv2)))
+  out<-data.frame(組別=c(input$g1,input$g2),分組人數=c(g$a$total,g$b$total),有效n=c(g$a$n,g$b$n),缺失=c(g$a$missing,g$b$missing),平均數=c(g$a$mean,g$b$mean),標準差=c(g$a$sd,g$b$sd),中位數=c(g$a$median,g$b$median))
+  level<-paste0(format((1-input$sa)*100,trim=TRUE),'% CI ')
+  out[[paste0(level,'LL')]]<-ci[,'LL'];out[[paste0(level,'UL')]]<-ci[,'UL'];out
+ },digits=4)
  survey_test<-reactive({g<-current_groups();req(g$a,g$b);test_summary(g$a,g$b,method=input$sm,alpha=input$sa,tail=input$st,delta0=input$sd0,sigma1=if(input$sm=='z')variance_sigma(input$sv1) else NA,sigma2=if(input$sm=='z')variance_sigma(input$sv2) else NA)})
  output$survey_ci<-renderUI({safe_ui({g<-current_groups();req(g$a,g$b);if(min(g$a$n,g$b$n)<2)stop('每組需至少兩筆有效資料。');HTML(mean_ci_svg(g$a,g$b,c(input$g1,input$g2),input$sa,method=if(input$sm=='z')'z' else 't',sigma1=if(input$sm=='z')variance_sigma(input$sv1) else NA,sigma2=if(input$sm=='z')variance_sigma(input$sv2) else NA))})})
  output$survey_result<-renderUI({safe_ui({
@@ -106,3 +112,4 @@ server<-function(input,output,session){
  observeEvent(input$answers_download,{content<-paste0('<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>平均數差異檢定習作詳解</title><style>body{font:16px/1.8 Arial,sans-serif;max-width:1100px;margin:30px auto;padding:20px}table{border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd}details{margin:20px 0}svg{max-width:550px}details>summary{font-weight:bold}</style><h1>平均數差異檢定習作詳解</h1>',as.character(exercises_ui()),'</html>');content<-gsub('<details>','<details open>',content,fixed=TRUE);session$sendCustomMessage('download-file',list(content=content,name='平均數差異檢定習作詳解.html',mime='text/html;charset=utf-8'))})
 }
 shinyApp(ui,server)
+
