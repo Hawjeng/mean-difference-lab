@@ -1,6 +1,7 @@
 library(shiny)
 source('stats.R',encoding='UTF-8',local=TRUE)
 survey<-jsonlite::fromJSON('data/survey.json',simplifyVector=FALSE)
+survey$variables$BirthYear<-NULL
 book<-jsonlite::fromJSON('data/textbook.json',simplifyVector=TRUE)
 selectInput<-function(...)shiny::selectInput(...,selectize=FALSE)
 tails<-c('雙尾：第一組 ≠ 第二組'='two','左尾：第一組 < 第二組'='left','右尾：第一組 > 第二組'='right')
@@ -26,7 +27,7 @@ show_result<-function(r,labels=c('第一組','第二組')){
    tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r))
 }
 example_choices<-c('Uber 搭車：獨立樣本 Z／Student／Welch'='uber','研究生年齡：獨立樣本比較'='age','Uber 搭車：同八人的配對 t'='paired','變異數同質檢驗：Levene 與 Brown–Forsythe'='levene')
-ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=20261105-compact'),tags$script(src='downloads.js')),
+ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=20261105-survey-compact'),tags$script(src='downloads.js')),
  div(class='app-top',a(href='https://hawjeng.github.io/resources.html','← 教學與專案'),a(href='https://hawjeng.github.io/statistical-inference-lab/','區間估計與假設檢定'),a(href='https://github.com/Hawjeng/mean-difference-lab',target='_blank',rel='noopener','GitHub 原始碼')),
  div(class='app-title',p(class='eyebrow','STATISTICS LAB · COMPARING TWO MEANS'),h1('平均數差異檢定'),p('先辨識研究設計，再看標準誤、拒絕域與尾機率。')),
  tabsetPanel(id='main_tab',selected='原理與流程',
@@ -36,12 +37,11 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
    conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',methods[1:3]),conditionalPanel("input.bm == 'z'",div(class='book-controls',numericInput('bs1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('bs2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入變異數。例如 σ=2 時，這裡應輸入 σ²=4。兩組變異數可以不同。'))),
    uiOutput('book_question'),uiOutput('book_result'),tags$details(tags$summary('原始數據與試算表'),tableOutput('book_raw'),uiOutput('book_links')))),
   tabPanel('調查研究',card(h3('兩組平均數差異'),p('713 筆調查資料，以分組摘要在瀏覽器內計算。每次只比較兩個互斥群組。'),
-   div(class='book-controls',selectInput('group','分組方式',setNames(names(survey$groups),vapply(survey$groups,function(g)g$label,character(1)))),selectInput('variable','分析變數',setNames(names(survey$variables),vapply(survey$variables,function(v)v$label,character(1))),selected='B1')),
-   div(class='book-controls',selectInput('g1','第一組',survey$groups$zodiac$categories,selected='水瓶座'),selectInput('g2','第二組',survey$groups$zodiac$categories,selected='雙魚座')),
+   div(class='survey-selectors',selectInput('group','分組方式',setNames(names(survey$groups),vapply(survey$groups,function(g)g$label,character(1)))),selectInput('variable','分析變數',setNames(names(survey$variables),vapply(survey$variables,function(v)v$label,character(1))),selected='B1'),selectInput('g1','第一組',survey$groups$zodiac$categories,selected='水瓶座'),selectInput('g2','第二組',survey$groups$zodiac$categories,selected='雙魚座')),
    div(class='book-controls',selectInput('sm','檢定方法',methods[1:3]),numericInput('sa','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('st','檢定方向',tails),numericInput('sd0','假設差異 Δ₀',0)),
    conditionalPanel("input.sm == 'z'",div(class='book-controls',numericInput('sv1','第一組已知母體變異數 σ₁²',NA,min=0),numericInput('sv2','第二組已知母體變異數 σ₂²',NA,min=0)),hint('請由題目、外部資料或研究設定給定母體變異數。此處不會把樣本 s² 自動當成已知 σ²；這兩個輸入只用於目前所選變數。')),
    uiOutput('survey_info'),tableOutput('survey_summary'),uiOutput('survey_ci'),uiOutput('survey_result'),
-   conditionalPanel("input.sm != 'z'",tags$details(tags$summary('檢視其餘變數與多重比較'),p('此表固定檢定 Δ₀=0；方向、α 與方法沿用上方設定。Holm 校正將這 13 個變數視為同一檢定家族。'),tableOutput('all_variables'),actionButton('export_results','下載比較結果 CSV',class='btn-primary'))),
+   conditionalPanel("input.sm != 'z'",tags$details(tags$summary('檢視其餘變數與多重比較'),p('此表固定檢定 Δ₀=0；方向、α 與方法沿用上方設定。Holm 校正將這 12 個變數視為同一檢定家族。'),tableOutput('all_variables'),actionButton('export_results','下載比較結果 CSV',class='btn-primary'))),
    conditionalPanel("input.sm == 'z'",hint('各變數的已知母體變異數可能不同，因此 Z 檢定逐一分析目前變數，不將同一組 σ² 套用到所有變數。')),
    tags$details(tags$summary('資料處理與解讀限制'),includeHTML('www/data-notes.html')))),
   tabPanel('習作詳解',card(h3('課後習作：先作答，再展開解答'),p('以課本題意與完整精度重算。預設 α=.05，方向由題目決定。'),
