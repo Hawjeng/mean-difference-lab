@@ -54,12 +54,31 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
     numericInput('ma','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('mt','檢定方向',tails),numericInput('md','虛無差異 Δ₀',0,step=.1)),
    conditionalPanel("input.mm == 'z'",hint('直接輸入已知 σ²，不需要先開根號；Z 檢定與上方樣本標準差 s₁、s₂ 無關。')),
    conditionalPanel("input.mm == 'paired'",hint('配對相關 r 須由同一批完整配對資料估計。')),uiOutput('manual_result'))),
+  tabPanel('R 與 Python 語法',card(h3('R 與 Python 語法'),
+   p('語法依「課本範例」及「調查研究」目前選用的資料與檢定設定產生。'),
+   h4('課本範例'),uiOutput('book_code'),
+   h4('調查研究'),uiOutput('survey_code'))),
   tabPanel('下載與來源',includeHTML('www/sources.html'))))
 
 server<-function(input,output,session){
  observeEvent(input$group,{cats<-unlist(survey$groups[[input$group]]$categories);updateSelectInput(session,'g1',choices=cats,selected=cats[1]);updateSelectInput(session,'g2',choices=cats,selected=cats[2])})
  observeEvent(input$example,{updateSelectInput(session,'bm',selected='pooled');val<-if(input$example=='age')4 else 2;updateNumericInput(session,'bs1',value=val);updateNumericInput(session,'bs2',value=val)})
  current_book<-reactive({key<-if(input$example=='age')'age' else 'uber';book[[key]]})
+ book_test<-reactive({
+  x<-current_book()
+  method<-if(input$example=='paired')'paired' else input$bm
+  test_raw(x$a,x$b,method=method,delta0=input$bd,alpha=input$ba,tail=input$bt,sigma1=if(method=='z')variance_sigma(input$bs1) else NA,sigma2=if(method=='z')variance_sigma(input$bs2) else NA)
+ })
+ output$book_code<-renderUI({safe_ui({
+  x<-current_book()
+  code<-if(input$example=='levene')variance_code(x$a,x$b,input$ba) else mean_code(book_test())
+  tagList(p(names(example_choices)[match(input$example,example_choices)]),htmltools::tagAppendAttributes(code,open=NA))
+ })})
+ output$survey_code<-renderUI({safe_ui({
+  g<-current_groups()
+  tagList(p(g$v$label,'｜',input$g1,'−',input$g2),
+   htmltools::tagAppendAttributes(mean_code(survey_test()),open=NA))
+ })})
  output$book_question<-renderUI({p(switch(input$example,uber='市區與郊區各 8 位不同上班族的每週 Uber 次數。第一組為市區，第二組為郊區。Z 示範假定兩組母體變異數皆為 2（σ=√2）。',age='管理研究生與心理研究生各 25 筆年齡。原始欄位並列不代表配對，這裡採獨立樣本。Z 示範假定兩組 σ=2。',paired='相同八位上班族分別在市區與郊區工作時的搭車次數，依原始資料逐列配對；差異為市區 − 郊區。',levene='以表 10.7 的兩組 Uber 次數檢驗變異數。Levene 使用平均數，Brown–Forsythe 使用中位數。'))})
  output$book_raw<-renderTable({x<-current_book();data.frame(序=x$a*0+seq_along(x$a),第一組=x$a,第二組=x$b)},digits=4)
  output$book_links<-renderUI({n<-if(input$example=='age')'Ch10p245age.xlsx' else if(input$example=='levene')'Ch10p266t10.7.xlsx' else 'Ch10p248ex10.1-10.4.xlsx';a(href=paste0('https://hawjeng.github.io/mean-difference-lab/downloads/',n),download=NA,'下載對應 Excel 原檔')})
@@ -69,7 +88,7 @@ server<-function(input,output,session){
    tagList(div(class='hypothesis','H₀：σ₁² = σ₂²；H₁：σ₁² ≠ σ₂²'),table_html(data.frame(方法=c('Levene（平均數）','Brown–Forsythe（中位數）'),W=fmt(c(l$W,bf$W)),df1=1,df2=l$df2,p值=pfmt(c(l$p,bf$p)),決策=ifelse(c(l$p,bf$p)<input$ba,'拒絕變異數相等','未能拒絕變異數相等'))),p('W 服從右尾 F 參考分配。未顯著不代表已證明變異數相同；不宜只憑前置檢定機械選擇 t 檢定，Welch 可直接作為不假設等變異數的方法。'),variance_code(x$a,x$b,input$ba))
   }else{
    method<-if(input$example=='paired')'paired' else input$bm
-   r<-test_raw(x$a,x$b,method=method,delta0=input$bd,alpha=input$ba,tail=input$bt,sigma1=if(method=='z')variance_sigma(input$bs1) else NA,sigma2=if(method=='z')variance_sigma(input$bs2) else NA)
+   r<-book_test()
    comparison<-if(input$example!='paired')safe_ui({table_html(result_frame(lapply(c('z','pooled','welch'),function(m)test_raw(x$a,x$b,method=m,alpha=input$ba,tail=input$bt,delta0=input$bd,sigma1=if(m=='z')variance_sigma(input$bs1) else NA,sigma2=if(m=='z')variance_sigma(input$bs2) else NA))))}) else NULL
    tagList(show_result(r,labels),if(method=='welch')hint('Welch 自由度保留小數。Excel 原檔將自由度取整或先四捨五入統計量時，p 值會略有不同；本介面不為了對齊快取值而降低精度。'),if(input$example!='paired')tags$details(tags$summary('同一資料的三種獨立檢定比較'),comparison))
   }
