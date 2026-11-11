@@ -1,5 +1,6 @@
 library(shiny)
 source('stats.R',encoding='UTF-8',local=TRUE)
+source('code.R',encoding='UTF-8',local=TRUE)
 survey<-jsonlite::fromJSON('data/survey.json',simplifyVector=FALSE)
 survey$variables$BirthYear<-NULL
 book<-jsonlite::fromJSON('data/textbook.json',simplifyVector=TRUE)
@@ -24,7 +25,7 @@ show_result<-function(r,labels=c('第一組','第二組')){
    tags$li(paste0('評估設計：',method_name(r$method),'。',if(r$method=='paired')paste0('n = ',r$a$n,' 對，r = ',fmt(r$r),'。') else paste0('n₁ = ',r$a$n,if(!is.null(r$b))paste0('，n₂ = ',r$b$n) else '', '。'))),
    tags$li(paste0('設定 α = ',r$alpha,'；',tail_label,'；',r$distribution,' 分配',if(is.finite(r$df))paste0('，df = ',fmt(r$df,3)) else '', '。')),
    tags$li(paste0('檢定量 = (差異 − Δ₀) / SE = (',fmt(r$difference),' − ',fmt(r$delta0),') / ',fmt(r$se),' = ',fmt(r$stat),'。')),
-   tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r))
+   tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r),mean_code(r))
 }
 example_choices<-c('Uber 搭車：獨立樣本 Z／Student／Welch'='uber','研究生年齡：獨立樣本比較'='age','Uber 搭車：同八人的配對 t'='paired','變異數同質檢驗：Levene 與 Brown–Forsythe'='levene')
 ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=20261105-survey-compact'),tags$script(src='downloads.js')),
@@ -65,7 +66,7 @@ server<-function(input,output,session){
  output$book_result<-renderUI({safe_ui({x<-current_book();labels<-if(input$example=='age')c('管理研究生','心理研究生') else c('市區','郊區');
   if(input$example=='levene'){
    l<-levene_raw(x$a,x$b);bf<-levene_raw(x$a,x$b,TRUE)
-   tagList(div(class='hypothesis','H₀：σ₁² = σ₂²；H₁：σ₁² ≠ σ₂²'),table_html(data.frame(方法=c('Levene（平均數）','Brown–Forsythe（中位數）'),W=fmt(c(l$W,bf$W)),df1=1,df2=l$df2,p值=pfmt(c(l$p,bf$p)),決策=ifelse(c(l$p,bf$p)<input$ba,'拒絕變異數相等','未能拒絕變異數相等'))),p('W 服從右尾 F 參考分配。未顯著不代表已證明變異數相同；不宜只憑前置檢定機械選擇 t 檢定，Welch 可直接作為不假設等變異數的方法。'))
+   tagList(div(class='hypothesis','H₀：σ₁² = σ₂²；H₁：σ₁² ≠ σ₂²'),table_html(data.frame(方法=c('Levene（平均數）','Brown–Forsythe（中位數）'),W=fmt(c(l$W,bf$W)),df1=1,df2=l$df2,p值=pfmt(c(l$p,bf$p)),決策=ifelse(c(l$p,bf$p)<input$ba,'拒絕變異數相等','未能拒絕變異數相等'))),p('W 服從右尾 F 參考分配。未顯著不代表已證明變異數相同；不宜只憑前置檢定機械選擇 t 檢定，Welch 可直接作為不假設等變異數的方法。'),variance_code(x$a,x$b,input$ba))
   }else{
    method<-if(input$example=='paired')'paired' else input$bm
    r<-test_raw(x$a,x$b,method=method,delta0=input$bd,alpha=input$ba,tail=input$bt,sigma1=if(method=='z')variance_sigma(input$bs1) else NA,sigma2=if(method=='z')variance_sigma(input$bs2) else NA)

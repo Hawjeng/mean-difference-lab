@@ -1,0 +1,36 @@
+# 安裝：python -m pip install scipy
+from math import sqrt
+from scipy import stats
+
+if method == "one":
+    difference, se, df = mean1, sd1 / sqrt(n1), n1 - 1
+else:
+    difference = mean1 - mean2
+    if method == "z":
+        se, df = sqrt(sigma1**2/n1 + sigma2**2/n2), None
+    elif method == "paired":
+        se = sqrt(max(0, sd1**2 + sd2**2 - 2*r*sd1*sd2)/n1)
+        df = n1 - 1
+    elif method == "pooled":
+        df = n1 + n2 - 2
+        pooled_var = ((n1-1)*sd1**2 + (n2-1)*sd2**2)/df
+        se = sqrt(pooled_var*(1/n1 + 1/n2))
+    else:
+        v1, v2 = sd1**2/n1, sd2**2/n2
+        se = sqrt(v1+v2)
+        df = (v1+v2)**2 / (v1**2/(n1-1)+v2**2/(n2-1))
+
+distribution = stats.norm if df is None else stats.t(df)
+observed = (difference-delta0)/se
+if tail == "two":
+    p = 2*distribution.sf(abs(observed))
+elif tail == "left":
+    p = distribution.cdf(observed)
+else:
+    p = distribution.sf(observed)
+
+critical = distribution.isf(alpha/2 if tail == "two" else alpha)
+margin = distribution.isf(alpha/2)*se
+print(dict(difference=difference, SE=se, observed=observed, df=df, p=p,
+           critical=critical, CI=(difference-margin, difference+margin),
+           reject_H0=p < alpha))
