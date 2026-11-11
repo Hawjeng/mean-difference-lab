@@ -35,11 +35,11 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
   tabPanel('原理與流程',includeHTML('www/lesson.html')),
   tabPanel('課本範例',card(h3('從各節資料開始'),selectInput('example','範例主題',example_choices),
    div(class='book-controls',numericInput('ba','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('bt','檢定方向',tails),numericInput('bd','虛無假設差異 Δ₀',0,step=.1)),
-   conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',methods[1:3],selected='welch'),conditionalPanel("input.bm == 'z'",div(class='book-controls',numericInput('bs1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('bs2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入變異數。例如 σ=2 時，這裡應輸入 σ²=4。兩組變異數可以不同。'))),
+   conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',methods[1:3],selected='pooled'),conditionalPanel("input.bm == 'z'",div(class='book-controls',numericInput('bs1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('bs2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入變異數。例如 σ=2 時，這裡應輸入 σ²=4。兩組變異數可以不同。'))),
    uiOutput('book_question'),uiOutput('book_result'),tags$details(tags$summary('原始數據與試算表'),tableOutput('book_raw'),uiOutput('book_links')))),
   tabPanel('調查研究',card(h3('兩組平均數差異'),p('713 筆調查資料，以分組摘要在瀏覽器內計算。每次只比較兩個互斥群組。'),
    div(class='survey-selectors',selectInput('group','分組方式',setNames(names(survey$groups),vapply(survey$groups,function(g)g$label,character(1)))),selectInput('variable','分析變數',setNames(names(survey$variables),vapply(survey$variables,function(v)v$label,character(1))),selected='B1'),selectInput('g1','第一組',survey$groups$zodiac$categories,selected='水瓶座'),selectInput('g2','第二組',survey$groups$zodiac$categories,selected='雙魚座')),
-   div(class='book-controls',selectInput('sm','檢定方法',methods[1:3],selected='welch'),numericInput('sa','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('st','檢定方向',tails),numericInput('sd0','假設差異 Δ₀',0,step=.1)),
+   div(class='book-controls',selectInput('sm','檢定方法',methods[1:3],selected='pooled'),numericInput('sa','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('st','檢定方向',tails),numericInput('sd0','假設差異 Δ₀',0,step=.1)),
    conditionalPanel("input.sm == 'z'",div(class='book-controls',numericInput('sv1','第一組已知母體變異數 σ₁²',NA,min=0),numericInput('sv2','第二組已知母體變異數 σ₂²',NA,min=0)),hint('請由題目、外部資料或研究設定給定母體變異數。此處不會把樣本 s² 自動當成已知 σ²；這兩個輸入只用於目前所選變數。')),
    uiOutput('survey_info'),tableOutput('survey_summary'),uiOutput('survey_ci'),uiOutput('survey_result'),
    conditionalPanel("input.sm != 'z'",tags$details(tags$summary('檢視其餘變數與多重比較'),p('此表固定檢定 Δ₀=0；方向、α 與方法沿用上方設定。Holm 校正將這 12 個變數視為同一檢定家族。'),tags$details(tags$summary('什麼是 Holm 校正？如何判讀？'),p('同時檢定多個變數時，碰巧出現顯著結果的機會增加。Holm 校正控制整組比較中「至少一次誤拒真實 H₀」的機率（家族型第一類錯誤率，FWER）不超過設定的 α。'),p('作法：先將 12 個原始 p 值由小到大排序，依序比較 α/12、α/11、…、α；遇到第一個未達門檻的檢定就停止拒絕，其後皆不拒絕。此表已換算成調整後的 Holm_p，直接與上方 α 比較即可。'),p('例如三個原始 p 值為 .01、.03、.04，Holm 調整後為 .03、.06、.06；在 α=.05 下，只有第一個顯著。'),p('p 是單項檢定的原始 p 值；Holm_p 是考慮這 12 次比較後的調整 p 值。校正範圍不包含另外嘗試的其他組別或方向。'),a(href='https://stat.ethz.ch/R-manual/R-devel/library/stats/html/p.adjust.html',target='_blank',rel='noopener','方法與定義：R 的 p.adjust 文件（Holm, 1979）')),tableOutput('all_variables'),actionButton('export_results','下載比較結果 CSV',class='btn-primary'))),
@@ -47,7 +47,7 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
    tags$details(tags$summary('資料處理與解讀限制'),includeHTML('www/data-notes.html')))),
   tabPanel('習作詳解',card(h3('課後習作：先作答，再展開解答'),p('以課本題意與完整精度重算。預設 α=.05，方向由題目決定。'),
    uiOutput('exercises'),actionButton('answers_download','下載習作詳解 HTML',class='btn-primary'))),
-  tabPanel('自行輸入',card(h3('調整摘要數據，觀察檢定圖'),div(class='manual-method',selectInput('mm','檢定方式',methods,selected='welch')),
+  tabPanel('自行輸入',card(h3('調整摘要數據，觀察檢定圖'),div(class='manual-method',selectInput('mm','檢定方式',methods,selected='pooled')),
    div(class='manual-data',numericInput('n1','第一組 n₁',8,min=2,step=1),numericInput('m1','第一組平均數',3),numericInput('s1','第一組樣本 s₁',sqrt(16/7),min=0),numericInput('n2','第二組 n₂',8,min=2,step=1),numericInput('m2','第二組平均數',4.25),numericInput('s2','第二組樣本 s₂',sqrt(7.5/7),min=0)),
    div(class='manual-settings',conditionalPanel("input.mm == 'z'",div(class='manual-variances',numericInput('variance1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('variance2','第二組已知母體變異數 σ₂²',2,min=0))),
     conditionalPanel("input.mm == 'paired'",numericInput('rho','配對相關 r',.912870929,min=-1,max=1,step=.05)),
@@ -58,7 +58,7 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
 
 server<-function(input,output,session){
  observeEvent(input$group,{cats<-unlist(survey$groups[[input$group]]$categories);updateSelectInput(session,'g1',choices=cats,selected=cats[1]);updateSelectInput(session,'g2',choices=cats,selected=cats[2])})
- observeEvent(input$example,{updateSelectInput(session,'bm',selected='welch');val<-if(input$example=='age')4 else 2;updateNumericInput(session,'bs1',value=val);updateNumericInput(session,'bs2',value=val)})
+ observeEvent(input$example,{updateSelectInput(session,'bm',selected='pooled');val<-if(input$example=='age')4 else 2;updateNumericInput(session,'bs1',value=val);updateNumericInput(session,'bs2',value=val)})
  current_book<-reactive({key<-if(input$example=='age')'age' else 'uber';book[[key]]})
  output$book_question<-renderUI({p(switch(input$example,uber='市區與郊區各 8 位不同上班族的每週 Uber 次數。第一組為市區，第二組為郊區。Z 示範假定兩組母體變異數皆為 2（σ=√2）。',age='管理研究生與心理研究生各 25 筆年齡。原始欄位並列不代表配對，這裡採獨立樣本。Z 示範假定兩組 σ=2。',paired='相同八位上班族分別在市區與郊區工作時的搭車次數，依原始資料逐列配對；差異為市區 − 郊區。',levene='以表 10.7 的兩組 Uber 次數檢驗變異數。Levene 使用平均數，Brown–Forsythe 使用中位數。'))})
  output$book_raw<-renderTable({x<-current_book();data.frame(序=x$a*0+seq_along(x$a),第一組=x$a,第二組=x$b)},digits=4)
