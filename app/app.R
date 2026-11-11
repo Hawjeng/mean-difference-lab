@@ -28,7 +28,7 @@ show_result<-function(r,labels=c('第一組','第二組')){
    tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r),mean_code(r))
 }
 example_choices<-c('Uber 搭車：獨立樣本 Z／Student／Welch'='uber','研究生年齡：獨立樣本比較'='age','Uber 搭車：同八人的配對 t'='paired','變異數同質檢驗：Levene 與 Brown–Forsythe'='levene')
-ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=20261105-survey-compact'),tags$script(src='downloads.js')),
+ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=syntax-layout'),tags$script(src='downloads.js')),
  div(class='app-top',a(href='https://hawjeng.github.io/resources.html',class='btn btn-default btn-sm','← 返回教學與專案'),a(href='https://hawjeng.github.io/statistical-inference-lab/','區間估計與假設檢定'),a(href='https://github.com/Hawjeng/mean-difference-lab',target='_blank',rel='noopener','GitHub 原始碼')),
  div(class='app-title',p(class='eyebrow','STATISTICS LAB · COMPARING TWO MEANS'),h1('平均數差異檢定'),p('先辨識研究設計，再看標準誤、拒絕域與尾機率。')),
  tabsetPanel(id='main_tab',selected='原理與流程',
@@ -54,10 +54,12 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
     numericInput('ma','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('mt','檢定方向',tails),numericInput('md','虛無差異 Δ₀',0,step=.1)),
    conditionalPanel("input.mm == 'z'",hint('直接輸入已知 σ²，不需要先開根號；Z 檢定與上方樣本標準差 s₁、s₂ 無關。')),
    conditionalPanel("input.mm == 'paired'",hint('配對相關 r 須由同一批完整配對資料估計。')),uiOutput('manual_result'))),
-  tabPanel('R 與 Python 語法',card(h3('R 與 Python 語法'),
-   p('語法依「課本範例」及「調查研究」目前選用的資料與檢定設定產生。'),
-   h4('課本範例'),uiOutput('book_code'),
-   h4('調查研究'),uiOutput('survey_code'))),
+  tabPanel('R 與 Python 語法',h2('R 與 Python 語法'),
+   div(class='syntax-layout',
+    card(selectInput('syntax_source','語法來源',c('課本範例'='book','調查研究'='survey'),selectize=FALSE),
+     p(class='hint','程式碼依目前的檢定設定產生。Python 需安裝 SciPy。')),
+    div(conditionalPanel("input.syntax_source === 'book'",uiOutput('book_code')),
+     conditionalPanel("input.syntax_source === 'survey'",uiOutput('survey_code'))))),
   tabPanel('下載與來源',includeHTML('www/sources.html'))))
 
 server<-function(input,output,session){
@@ -72,12 +74,12 @@ server<-function(input,output,session){
  output$book_code<-renderUI({safe_ui({
   x<-current_book()
   code<-if(input$example=='levene')variance_code(x$a,x$b,input$ba) else mean_code(book_test())
-  tagList(p(names(example_choices)[match(input$example,example_choices)]),htmltools::tagAppendAttributes(code,open=NA))
+  tagList(p(names(example_choices)[match(input$example,example_choices)]),syntax_cards(code))
  })})
  output$survey_code<-renderUI({safe_ui({
   g<-current_groups()
   tagList(p(g$v$label,'｜',input$g1,'−',input$g2),
-   htmltools::tagAppendAttributes(mean_code(survey_test()),open=NA))
+   syntax_cards(mean_code(survey_test())))
  })})
  output$book_question<-renderUI({p(switch(input$example,uber='市區與郊區各 8 位不同上班族的每週 Uber 次數。第一組為市區，第二組為郊區。Z 示範假定兩組母體變異數皆為 2（σ=√2）。',age='管理研究生與心理研究生各 25 筆年齡。原始欄位並列不代表配對，這裡採獨立樣本。Z 示範假定兩組 σ=2。',paired='相同八位上班族分別在市區與郊區工作時的搭車次數，依原始資料逐列配對；差異為市區 − 郊區。',levene='以表 10.7 的兩組 Uber 次數檢驗變異數。Levene 使用平均數，Brown–Forsythe 使用中位數。'))})
  output$book_raw<-renderTable({x<-current_book();data.frame(序=x$a*0+seq_along(x$a),第一組=x$a,第二組=x$b)},digits=4)

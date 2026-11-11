@@ -3,7 +3,7 @@ code_number<-function(x)format(x,digits=17,trim=TRUE,scientific=TRUE,decimal.mar
 code_string<-function(x)encodeString(x,quote='"')
 code_vector<-function(x)paste(code_number(x),collapse=', ')
 code_panel<-function(r_code,py_code){
- block<-function(title,code,filename)tagList(
+ block<-function(title,code,filename)div(class='syntax-block',
   tags$h4(title),
   tags$button(type='button',class='btn btn-default lab-code-download','data-filename'=filename,paste('下載',filename)),
   tags$textarea(class='form-control',rows=12,readonly=NA,spellcheck='false','aria-label'=paste(title,'語法'),code))
@@ -47,4 +47,10 @@ variance_code<-function(x,y,alpha){
   '    result = stats.levene(x, y, center=center)',
   '    print(center, result, "reject_H0 =", result.pvalue < alpha)'),collapse='\n')
  code_panel(r_code,py_code)
+}
+
+syntax_cards<-function(panel){
+ tagList(lapply(panel$children[3:4],function(block){
+  htmltools::tagAppendAttributes(block,class='lab-card')
+ }))
 }
