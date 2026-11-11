@@ -28,7 +28,7 @@ show_result<-function(r,labels=c('第一組','第二組')){
    tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r),mean_code(r))
 }
 example_choices<-c('Uber 搭車：獨立樣本 Z／Student／Welch'='uber','研究生年齡：獨立樣本比較'='age','Uber 搭車：同八人的配對 t'='paired','變異數同質檢驗：Levene 與 Brown–Forsythe'='levene')
-ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=syntax-layout'),tags$script(src='downloads.js')),
+ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=syntax-settings'),tags$script(src='downloads.js')),
  div(class='app-top',a(href='https://hawjeng.github.io/resources.html',class='btn btn-default btn-sm','← 返回教學與專案'),a(href='https://hawjeng.github.io/statistical-inference-lab/','區間估計與假設檢定'),a(href='https://github.com/Hawjeng/mean-difference-lab',target='_blank',rel='noopener','GitHub 原始碼')),
  div(class='app-title',p(class='eyebrow','STATISTICS LAB · COMPARING TWO MEANS'),h1('平均數差異檢定'),p('先辨識研究設計，再看標準誤、拒絕域與尾機率。')),
  tabsetPanel(id='main_tab',selected='原理與流程',
@@ -56,7 +56,7 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
    conditionalPanel("input.mm == 'paired'",hint('配對相關 r 須由同一批完整配對資料估計。')),uiOutput('manual_result'))),
   tabPanel('R 與 Python 語法',h2('R 與 Python 語法'),
    div(class='syntax-layout',
-    card(selectInput('syntax_source','語法來源',c('課本範例'='book','調查研究'='survey'),selectize=FALSE),
+    tags(class='lab-card syntax-settings',open=NA,tags('分析設定'),selectInput('syntax_source','語法來源',c('課本範例'='book','調查研究'='survey'),selectize=FALSE),
      p(class='hint','程式碼依目前的檢定設定產生。Python 需安裝 SciPy。')),
     div(conditionalPanel("input.syntax_source === 'book'",uiOutput('book_code')),
      conditionalPanel("input.syntax_source === 'survey'",uiOutput('survey_code'))))),

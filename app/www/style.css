@@ -11,3 +11,4 @@ body{font-family:"Microsoft JhengHei","PingFang TC",Arial,sans-serif;color:#183d
 .syntax-layout .syntax-block h4{margin:0 0 12px;font-weight:700}
 .syntax-layout .syntax-block textarea{margin-top:12px;font-family:Consolas,monospace;background:#f6f9fa;resize:vertical}
 @media(max-width:767px){.syntax-layout{grid-template-columns:minmax(0,1fr);gap:0}}
+.syntax-layout:has(>.syntax-settings:not([open])){grid-template-columns:minmax(0,1fr)} .syntax-settings[open]>summary{margin-bottom:12px}
