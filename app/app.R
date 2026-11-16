@@ -73,13 +73,13 @@ server<-function(input,output,session){
  })
  output$book_code<-renderUI({safe_ui({
   x<-current_book()
-  code<-if(input$example=='levene')variance_code(x$a,x$b,input$ba) else mean_code(book_test())
+  code<-if(input$example=='levene')variance_code(x$a,x$b,input$ba,show_console=TRUE) else mean_code(book_test(),show_console=TRUE)
   tagList(p(names(example_choices)[match(input$example,example_choices)]),syntax_cards(code))
  })})
  output$survey_code<-renderUI({safe_ui({
   g<-current_groups()
   tagList(p(g$v$label,'｜',input$g1,'−',input$g2),
-   syntax_cards(mean_code(survey_test())))
+   syntax_cards(mean_code(survey_test(),show_console=TRUE)))
  })})
  output$book_question<-renderUI({p(switch(input$example,uber='市區與郊區各 8 位不同上班族的每週 Uber 次數。第一組為市區，第二組為郊區。Z 示範假定兩組母體變異數皆為 2（σ=√2）。',age='管理研究生與心理研究生各 25 筆年齡。原始欄位並列不代表配對，這裡採獨立樣本。Z 示範假定兩組 σ=2。',paired='相同八位上班族分別在市區與郊區工作時的搭車次數，依原始資料逐列配對；差異為市區 − 郊區。',levene='以表 10.7 的兩組 Uber 次數檢驗變異數。Levene 使用平均數，Brown–Forsythe 使用中位數。'))})
  output$book_raw<-renderTable({x<-current_book();data.frame(序=x$a*0+seq_along(x$a),第一組=x$a,第二組=x$b)},digits=4)

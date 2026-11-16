@@ -5,3 +5,25 @@ document.addEventListener('click',function(event){
  const button=event.target.closest('.lab-code-download');
  if(button)saveLocalFile(button.parentElement.querySelector('textarea[aria-label^="'+(button.dataset.filename.endsWith('.R')?'R':'Python')+'"]').value,button.dataset.filename,'text/plain;charset=utf-8');
 });
+document.addEventListener('click', event => {
+ const button=event.target.closest('.lab-python-run');
+ if(!button)return;
+ const block=button.closest('.syntax-block'), output=block.querySelector('.python-console');
+ const code=block.querySelector('textarea').value;
+ button.disabled=true;
+ output.textContent='正在載入 Python 並執行…';
+ let worker,timer;
+ const finish=(message,ok)=>{
+  clearTimeout(timer);
+  worker?.terminate();
+  output.textContent=ok?message:message+'\n請重新整理或換用新版瀏覽器及網路。也可下載 .py，在本機先執行 python -m pip install scipy，再執行程式。';
+  button.disabled=false;
+ };
+ try{
+  worker=new Worker('python-console.js',{type:'module'});
+  worker.onmessage=({data})=>finish(data.output,data.ok);
+  worker.onerror=()=>finish('無法載入 Python 執行環境。',false);
+  timer=setTimeout(()=>finish('Python 執行逾時。',false),120000);
+  worker.postMessage({code});
+ }catch(error){finish(error.message,false);}
+});
