@@ -56,7 +56,7 @@ ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互�
    conditionalPanel("input.mm == 'paired'",hint('配對相關 r 須由同一批完整配對資料估計。')),uiOutput('manual_result'))),
   tabPanel('R 與 Python 語法',h2('R 與 Python 語法'),
    div(class='syntax-layout',
-    tags(class='lab-card syntax-settings',open=NA,tags('分析設定'),selectInput('syntax_source','語法來源',c('課本範例'='book','調查研究'='survey'),selectize=FALSE),
+    tags$details(class='lab-card syntax-settings',open=NA,tags$summary('分析設定'),selectInput('syntax_source','語法來源',c('課本範例'='book','調查研究'='survey')),
      p(class='hint','程式碼依目前的檢定設定產生。Python 需安裝 SciPy。')),
     div(conditionalPanel("input.syntax_source === 'book'",uiOutput('book_code')),
      conditionalPanel("input.syntax_source === 'survey'",uiOutput('survey_code'))))),
