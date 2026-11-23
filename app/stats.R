@@ -40,7 +40,7 @@ levene_summary<-function(a,b,center='meanAbs'){
  W<-ssb/(ssw/(a$n+b$n-2));list(W=W,p=pf(W,1,a$n+b$n-2,lower.tail=FALSE),df1=1,df2=a$n+b$n-2)
 }
 levene_raw<-function(x,y,median_center=FALSE){f<-if(median_center)median else mean;a<-summarize(x);b<-summarize(y);a$meanAbs<-summarize(abs(x-f(x)));b$meanAbs<-summarize(abs(y-f(y)));levene_summary(a,b)}
-method_name<-function(m)switch(m,z='獨立 Z：母體變異數已知',pooled='Student t：等變異數',welch='Welch t：不假設等變異數',paired='配對 t',one='單樣本 t')
+method_name<-function(m)switch(m,z='獨立 Z：母體變異數已知',pooled="Student's t：等變異數",welch="Welch's t：不假設等變異數",paired='配對 t',one='單樣本 t')
 hypothesis<-function(r,alternative=FALSE){op<-if(r$tail=='two')if(alternative)'≠' else '=' else if(r$tail=='left')if(alternative)'<' else '≥' else if(alternative)'>' else '≤';paste0(if(alternative)'H₁：' else 'H₀：',if(r$method=='one')'μ' else 'μ₁ − μ₂', ' ',op,' ',format(r$delta0,trim=TRUE,scientific=FALSE))}
 result_frame<-function(results){
  do.call(rbind,lapply(results,function(r)data.frame(方法=method_name(r$method),估計值=fmt(r$difference),SE=fmt(r$se),檢定量=fmt(r$stat),df=if(is.finite(r$df))fmt(r$df,3) else '—',p值=pfmt(r$p),雙側CI下限=fmt(r$lower),雙側CI上限=fmt(r$upper),決策=if(r$reject)'拒絕 H₀' else '未能拒絕 H₀',check.names=FALSE)))
@@ -80,10 +80,29 @@ mean_ci<-function(s,alpha=.05,method='t',sigma=NA){
  c(LL=s$mean-half,UL=s$mean+half)
 }
 mean_ci_svg<-function(a,b,labels=c('第一組','第二組'),alpha=.05,method='t',sigma1=NA,sigma2=NA){
- ss<-list(a,b);sigmas<-c(sigma1,sigma2);ci<-vapply(1:2,function(i)mean_ci(ss[[i]],alpha,method,sigmas[i]),numeric(2));lo<-ci['LL',];hi<-ci['UL',];rg<-range(lo,hi);pad<-max(diff(rg)*.18,.01);rg<-rg+c(-pad,pad);X<-function(x)100+600*(x-rg[1])/diff(rg)
- out<-c('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 285" role="img" aria-label="兩組平均數與各組雙側信賴區間：LL 下限、UL 上限" style="width:100%;font-family:Microsoft JhengHei,Arial,sans-serif">',svg_text(400,25,paste0(fmt((1-alpha)*100,1),'% 各組平均數 ',method,' CI（非差異 CI）')))
- for(i in 1:2){s<-ss[[i]];y<-80+(i-1)*90;col<-if(i==1)'#347f90' else '#7738b5';out<-c(out,svg_text(90,y+4,labels[i],col,13,'end'),sprintf('<path d="M%.2f %s H%.2f M%.2f %s V%s M%.2f %s V%s" stroke="%s" stroke-width="3"/><circle cx="%.2f" cy="%s" r="5" fill="%s"/>',X(lo[i]),y,X(hi[i]),X(lo[i]),y-5,y+5,X(hi[i]),y-5,y+5,col,X(s$mean),y,col),svg_text(X(lo[i]),y-16,paste0('LL=',fmt(lo[i])),col,12,'end'),svg_text(X(hi[i]),y-16,paste0('UL=',fmt(hi[i])),col,12,'start'),svg_text(X(s$mean),y+25,paste0('M=',fmt(s$mean,2),'，n=',s$n),col,12))}
- for(tick in pretty(rg,n=6))if(tick>=rg[1]&&tick<=rg[2])out<-c(out,svg_text(X(tick),235,format(tick,trim=TRUE),'#536c76',12))
- paste(c(out,svg_text(400,268,'LL＝下限，UL＝上限；橫軸為原始單位，請用差異的 CI 與檢定作判斷。','#536c76',12),'</svg>'),collapse='')
+ ss <- list(a,b)
+ sigmas <- c(sigma1,sigma2)
+ ci <- vapply(1:2,function(i)mean_ci(ss[[i]],alpha,method,sigmas[i]),numeric(2))
+ lo <- ci['LL',]
+ hi <- ci['UL',]
+ rg <- range(lo,hi)
+ X <- function(x) 150 + 130*(x-mean(rg))/max(diff(rg),.Machine$double.eps)
+ title <- paste0(fmt((1-alpha)*100,1),'% 各組平均數 ',method,' CI')
+ out <- paste0('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 88" role="img" aria-label="',
+  esc(paste(title,paste(labels,collapse='、'))),'">')
+ for(i in 1:2){
+  y <- 20+(i-1)*44
+  col <- c('#347f90','#7738b5')[i]
+  lower <- X(lo[i])
+  upper <- X(hi[i])
+  center <- X(ss[[i]]$mean)
+  out <- c(out,
+   sprintf('<path d="M%.2f %d H%.2f M%.2f %d v6 M%.2f %d v6" stroke="%s" stroke-width="2"/><circle cx="%.2f" cy="%d" r="3" fill="%s"/>',
+    lower,y,upper,lower,y-3,upper,y-3,col,center,y,col),
+   svg_text(lower,y-7,paste0('LL=',fmt(lo[i])),col,10,'end'),
+   svg_text(upper,y-7,paste0('UL=',fmt(hi[i])),col,10,'start'),
+   svg_text(center,y+15,paste0('mean=',fmt(ss[[i]]$mean)),col,10))
+ }
+ paste(c(out,'</svg>'),collapse='')
 }
 

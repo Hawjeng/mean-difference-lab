@@ -3,7 +3,13 @@ const fs=require('fs');
 (async()=>{const browser=await chromium.launch({headless:true,channel:'msedge'});const page=await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(process.env.LAB_URL||'http://127.0.0.1:8877');
 const scope=process.env.LAB_URL?page.frameLocator('iframe').first():page;await scope.locator('.shiny-bound-input').first().waitFor({timeout:180000});async function tab(name){await scope.getByRole('tab',{name,exact:true}).click();await page.waitForTimeout(650);}async function noErrors(){const err=await scope.locator('.shiny-output-error').allTextContents();if(err.some(x=>x.trim()))throw Error(err.join('\n'));}
 await tab('課本範例');await scope.locator('#book_result svg').first().waitFor();await noErrors();
-for(const method of ['z','pooled','welch']){await scope.locator('#bm').selectOption(method);await page.waitForTimeout(250);await noErrors();}
+for(const method of ['z','t']){await scope.locator('#bm').selectOption(method);await page.waitForTimeout(250);await noErrors();}
+const bookRows=scope.locator('#book_result tbody tr');
+const comparison=scope.locator('#book_result .book-test-comparison');
+await comparison.locator('section svg').nth(1).waitFor();
+if(await bookRows.count()!==2||!(await bookRows.nth(0).innerText()).includes("Student's t")||!(await bookRows.nth(1).innerText()).includes("Welch's t"))throw Error('Expected both independent t tests');
+const [student,welch]=await Promise.all([comparison.locator('section').nth(0).boundingBox(),comparison.locator('section').nth(1).boundingBox()]);
+if(!student||!welch||student.y!==welch.y||student.x>=welch.x)throw Error('Expected the two t plots side by side');
 for(const tail of ['left','right','two']){await scope.locator('#bt').selectOption(tail);await page.waitForTimeout(250);await noErrors();}
 await page.screenshot({path:__dirname+'/../test-output/textbook.png',fullPage:true});
 for(const example of ['age','paired','levene']){await scope.locator('#example').selectOption(example);await page.waitForTimeout(400);await noErrors();}
