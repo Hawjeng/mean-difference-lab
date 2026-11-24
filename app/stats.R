@@ -54,7 +54,7 @@ distribution_svg<-function(r){
  alpha_mask<-if(r$tail=='two')abs(xx)>=r$critical else if(r$tail=='left')xx<= -r$critical else xx>=r$critical
  p_mask<-if(r$tail=='two')abs(xx)>=abs(r$stat) else if(r$tail=='left')xx<=r$stat else xx>=r$stat
  arrow_id<-paste0('area-arrow-',gsub('[^A-Za-z0-9]','',paste(r$distribution,r$tail,fmt(r$stat,8),fmt(r$critical,8),r$df)))
- out<-c(sprintf('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 910 393" role="img" aria-label="α 拒絕域與 p-value 尾機率整合圖" style="width:100%%;font-family:Microsoft JhengHei,Arial,sans-serif"><defs><marker id="%s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1e40af"/></marker></defs><rect width="910" height="393" fill="white"/><g transform="translate(0,-25)">',arrow_id),svg_text(430,51,hypothesis(r)))
+ out<-c(sprintf('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 910 393" role="img" aria-label="α 拒絕域與 p-value 尾機率整合圖" style="width:100%%;font-family:Microsoft JhengHei,Arial,sans-serif"><defs><marker id="%s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1e40af" stroke="white" stroke-width="2" paint-order="stroke fill"/></marker></defs><rect width="910" height="393" fill="white"/><g transform="translate(0,-25)">',arrow_id),svg_text(430,51,hypothesis(r)))
  shade<-function(mask,fill,opacity=1){
   run<-rle(mask);ends<-cumsum(run$lengths);starts<-ends-run$lengths+1;polygons<-character()
   for(i in which(run$values)){ids<-starts[i]:ends[i];polygons<-c(polygons,sprintf('<polygon points="%.2f,245 %s %.2f,245" fill="%s" fill-opacity="%s"/>',X(xx[ids[1]]),paste(sprintf('%.2f,%.2f',X(xx[ids]),Y(dens[ids])),collapse=' '),X(xx[ids[length(ids)]]),fill,opacity))}
@@ -69,7 +69,7 @@ distribution_svg<-function(r){
  cvs<-if(r$tail=='two')c(-r$critical,r$critical) else if(r$tail=='left')-r$critical else r$critical
  area_arrow<-function(x1,y1,x2,y2)sprintf('<path d="M%.2f %.2f L%.2f %.2f" fill="none" stroke="#1e40af" stroke-width="1.3" marker-end="url(#%s)"/>',x1,y1,x2,y2,arrow_id)
  middle<-if(r$tail=='two')0 else if(r$tail=='left')r$critical/3 else -r$critical/3
- out<-c(out,svg_text(X(middle),157,paste0('1−α = ',fmt(1-r$alpha,3)),'#1e40af',14),area_arrow(X(middle),166,X(middle),217))
+ out<-c(out,svg_text(X(middle),157,paste0('1−α = ',fmt(1-r$alpha,3)),'#1e40af',14))
  area_label<-paste0(if(r$tail=='two')'α/2 = ' else 'α = ',fmt(if(r$tail=='two')r$alpha/2 else r$alpha,3))
  for(cv in cvs){
   side<-if(cv<0)-1 else 1;target<-cv+side*.18
