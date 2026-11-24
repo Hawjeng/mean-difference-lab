@@ -57,7 +57,7 @@ distribution_svg<-function(r){
  alpha_mask<-if(r$tail=='two')abs(xx)>=r$critical else if(r$tail=='left')xx<= -r$critical else xx>=r$critical
  p_mask<-if(r$tail=='two')abs(xx)>=abs(r$stat) else if(r$tail=='left')xx<=r$stat else xx>=r$stat
  arrow_id<-paste0('area-arrow-',gsub('[^A-Za-z0-9]','',paste(r$distribution,r$tail,fmt(r$stat,8),fmt(r$critical,8),r$df)))
- out<-c(sprintf('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 910 393" role="img" aria-label="α 拒絕域與 p-value 尾機率整合圖" style="width:100%%;font-family:Microsoft JhengHei,Arial,sans-serif"><defs><marker id="%s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1e40af" stroke="white" stroke-width="2" paint-order="stroke fill"/></marker><pattern id="alpha-overlap" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 7 L7 0" stroke="#1e40af" stroke-width="1.5"/></pattern></defs><rect width="910" height="393" fill="white"/><g transform="translate(0,-25)">',arrow_id),svg_text(430,51,hypothesis(r)))
+ out<-c(sprintf('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 910 350" role="img" aria-label="α 拒絕域與 p-value 尾機率整合圖" style="width:100%%;font-family:Microsoft JhengHei,Arial,sans-serif"><defs><marker id="%s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1e40af" stroke="white" stroke-width="2" paint-order="stroke fill"/></marker><pattern id="alpha-overlap" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 7 L7 0" stroke="#1e40af" stroke-width="1.5"/></pattern></defs><rect width="910" height="350" fill="white"/><g transform="translate(0,-25)">',arrow_id),svg_text(430,51,hypothesis(r)))
  shade<-function(mask,fill,opacity=1){
   run<-rle(mask);ends<-cumsum(run$lengths);starts<-ends-run$lengths+1;polygons<-character()
   for(i in which(run$values)){ids<-starts[i]:ends[i];polygons<-c(polygons,sprintf('<polygon points="%.2f,245 %s %.2f,245" fill="%s" fill-opacity="%s"/>',X(xx[ids[1]]),paste(sprintf('%.2f,%.2f',X(xx[ids]),Y(dens[ids])),collapse=' '),X(xx[ids[length(ids)]]),fill,opacity))}
@@ -89,10 +89,9 @@ distribution_svg<-function(r){
  for(cv in cvs)out<-c(out,sprintf('<path d="M%.2f 95 V245" stroke="#c16a16" stroke-width="1.6" stroke-dasharray="5 4"/>',X(cv)),svg_text(X(cv),86,paste0(if(cv<0)'−' else '+',if(r$distribution=='z')'zcv' else 'tcv',' = ',fmt(cv)),'#c16a16',12))
  out<-c(out,svg_text(X(r$stat)+if(r$stat<0)6 else -6,112,paste0(r$distribution,'_obt = ',fmt(r$stat)),'#7738b5',12,if(r$stat<0)'start' else 'end'))
  out<-c(out,sprintf('<path d="M%.2f 91 V245" stroke="#7738b5" stroke-width="2.2"/>',X(r$stat)),svg_text(710,250,if(r$distribution=='z')'z' else paste0('t(',format(round(r$df,2),trim=TRUE),')'),'#183d47',12,'start'),
- svg_text(430,295,paste0('臨界值 = ',if(r$tail=='two')'±' else if(r$tail=='left')'−' else '',fmt(r$critical),'；',r$distribution,'_obt = ',fmt(r$stat)),'#7738b5'),
- svg_text(max(240,min(670,X(r$stat))),322,ci_label,'#7738b5',12),
- '<rect x="160" y="344" width="24" height="14" fill="#1e40af"/>',svg_text(195,356,paste0('深藍面積 = α = ',r$alpha,if(r$tail=='two')'（每尾 α/2）' else ''),'#1e40af',13,'start'),
- '<rect x="160" y="373" width="24" height="14" fill="#bfdbfe"/>',svg_text(195,385,paste0('淺藍面積 = p-value = ',pfmt(r$p)),'#2563eb',13,'start'),'</g></svg>');paste(out,collapse='')
+ svg_text(max(240,min(670,X(r$stat))),287,ci_label,'#7738b5',12),
+ svg_text(430,309,'此雙側 CI 適用於雙尾比較，不適用於單尾比較情境。','#c32d3b',12),
+ svg_text(430,335,'深藍：α 拒絕域　淺藍：p-value（重疊處為深藍斜線）','#536c76',12),'</g></svg>');paste(out,collapse='')
 }
 mean_ci<-function(s,alpha=.05,method='t',sigma=NA){
  if(s$n<2)return(c(LL=NA_real_,UL=NA_real_))
