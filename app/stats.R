@@ -71,7 +71,8 @@ distribution_svg<-function(r){
  ci_label<-paste0(if(r$method=='one')'平均數' else '平均數差異','的 95% CI（原始單位）：[',fmt(r$difference-ci_half),', ',fmt(r$difference+ci_half),']')
  cvs<-if(r$tail=='two')c(-r$critical,r$critical) else if(r$tail=='left')-r$critical else r$critical
  area_arrow<-function(x1,y1,x2,y2)sprintf('<path d="M%.2f %.2f L%.2f %.2f" fill="none" stroke="#1e40af" stroke-width="1.3" marker-end="url(#%s)"/>',x1,y1,x2,y2,arrow_id)
- p_area_arrow<-function(...){a<-gsub('#1e40af','#c97908',area_arrow(...),fixed=TRUE);gsub(paste0('#',arrow_id),'#p-area-arrow',a,fixed=TRUE)}
+ p_area_arrow<-function(...){a<-gsub('#1e40af','#c97908',area_arrow(...),fixed=TRUE);a<-gsub(paste0('#',arrow_id),'#p-area-arrow',a,fixed=TRUE);halo<-sub('marker-end="[^"]+"','',a);halo<-gsub('#c97908','white',halo,fixed=TRUE);halo<-gsub('stroke-width="1.3"','stroke-width="4"',halo,fixed=TRUE);paste0(halo,a)}
+ prob_text<-function(...)sub('<text ','<text stroke="white" stroke-width="2" paint-order="stroke" ',svg_text(...),fixed=TRUE)
  middle<-if(r$tail=='two')0 else if(r$tail=='left')r$critical/3 else -r$critical/3
  out<-c(out,svg_text(X(middle),157,paste0('1−α = ',fmt(1-r$alpha,3)),'#1e40af',14))
  area_label<-paste0(if(r$tail=='two')'α/2 = ' else 'α = ',fmt(if(r$tail=='two')r$alpha/2 else r$alpha,3))
@@ -85,7 +86,7 @@ distribution_svg<-function(r){
   boundary<-if(r$tail=='two')side*abs(r$stat) else r$stat
   target<-max(-hi+.02,min(hi-.02,boundary+side*.15))
   px<-max(110,min(650,X(boundary)+side*65))
-  out<-c(out,svg_text(px,211,paste0(if(r$tail=='two')'p/2 = ' else 'p = ',pfmt(if(r$tail=='two')r$p/2 else r$p)),'#c97908',13),p_area_arrow(px,220,X(target),245-(245-Y(pdf(target)))*.45))
+  out<-c(out,prob_text(px,211,paste0(if(r$tail=='two')'p/2 = ' else 'p = ',pfmt(if(r$tail=='two')r$p/2 else r$p)),'#c97908',13),p_area_arrow(px,220,X(target),245-(245-Y(pdf(target)))*.45))
  }
  for(cv in cvs)out<-c(out,sprintf('<path d="M%.2f 95 V245" stroke="#c16a16" stroke-width="1.6" stroke-dasharray="5 4"/>',X(cv)),svg_text(X(cv),86,paste0(if(cv<0)'−' else '+',if(r$distribution=='z')'zcv' else 'tcv',' = ',fmt(cv)),'#c16a16',12))
  out<-c(out,svg_text(X(r$stat)+if(r$stat<0)6 else -6,112,paste0(r$distribution,'_obt = ',fmt(r$stat)),'#dc2626',12,if(r$stat<0)'start' else 'end'))
