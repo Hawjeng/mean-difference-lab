@@ -88,7 +88,7 @@ distribution_svg<-function(r){
  }
  for(cv in cvs)out<-c(out,sprintf('<path d="M%.2f 95 V245" stroke="#c16a16" stroke-width="1.6" stroke-dasharray="5 4"/>',X(cv)),svg_text(X(cv),86,paste0(if(cv<0)'−' else '+',if(r$distribution=='z')'zcv' else 'tcv',' = ',fmt(cv)),'#c16a16',12))
  out<-c(out,svg_text(X(r$stat)+if(r$stat<0)6 else -6,112,paste0(r$distribution,'_obt = ',fmt(r$stat)),'#7738b5',12,if(r$stat<0)'start' else 'end'))
- out<-c(out,sprintf('<path d="M%.2f 91 V245" stroke="#7738b5" stroke-width="2.2"/>',X(r$stat)),svg_text(710,250,if(r$distribution=='z')'z' else paste0('t(df=',fmt(r$df,2),' ≈ ',floor(r$df+.5),')'),'#183d47',12,'start'),
+ out<-c(out,sprintf('<path d="M%.2f 91 V245" stroke="#7738b5" stroke-width="2.2"/>',X(r$stat)),svg_text(710,250,if(r$distribution=='z')'z' else paste0('t(',format(round(r$df,2),trim=TRUE),')'),'#183d47',12,'start'),
  svg_text(430,295,paste0('臨界值 = ',if(r$tail=='two')'±' else if(r$tail=='left')'−' else '',fmt(r$critical),'；',r$distribution,'_obt = ',fmt(r$stat)),'#7738b5'),
  svg_text(max(240,min(670,X(r$stat))),322,ci_label,'#7738b5',12),
  '<rect x="160" y="344" width="24" height="14" fill="#1e40af"/>',svg_text(195,356,paste0('深藍面積 = α = ',r$alpha,if(r$tail=='two')'（每尾 α/2）' else ''),'#1e40af',13,'start'),

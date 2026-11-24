@@ -47,6 +47,6 @@ for(m in c('z','welch'))for(tail in c('two','left','right')){
  if(m=='z'){
   ticks<-regmatches(svg,gregexpr('data-value="[^"]+"',svg))[[1]];vals<-as.numeric(sub('"$','',sub('data-value="','',ticks,fixed=TRUE)))
   close(diff(vals),rep(1,length(vals)-1));stopifnot(grepl('>z</text>',svg,fixed=TRUE))
- }else stopifnot(grepl(paste0('>t(df=',fmt(r$df,2),' ≈ ',floor(r$df+.5),')</text>'),svg,fixed=TRUE))
+ }else stopifnot(grepl(paste0('>t(',format(round(r$df,2),trim=TRUE),')</text>'),svg,fixed=TRUE))
 }
 cat('PASS: unified alpha/p SVG for both distributions and all tails, unit-spaced Z ticks and right-end axis labels.\n')
