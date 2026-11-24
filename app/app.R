@@ -9,7 +9,7 @@ tails<-c('雙尾：第一組 ≠ 第二組'='two','左尾：第一組 < 第二�
 methods<-c('獨立樣本 Z（母體變異數 σ² 已知）'='z','Student t（等變異數）'='pooled','Welch t（不假設等變異數）'='welch','配對 t（需配對資料）'='paired')
 card<-function(...)div(class='lab-card',...)
 hint<-function(...)p(class='hint',...)
-diagrams<-function(r)tagList(div(class='diagram-scroll',style='max-width:900px;margin:0 auto',HTML(distribution_svg(r))),hint('深藍為 α 拒絕域，淺藍為 p-value 尾機率；重疊處以深藍斜線標示拒絕域。中央標示 1−α；箭頭標示各尾的 α 或 α/2。橙色虛線是臨界值，紫色實線是觀察檢定量。α 與 p-value 都不是 H₀ 為真的機率。'))
+diagrams<-function(r)tagList(div(class='diagram-scroll',style='max-width:900px;margin:0 auto',HTML(distribution_svg(r))),hint('深藍為 α 拒絕域，淺藍為 p-value 尾機率；重疊處以深藍斜線標示拒絕域。中央標示 1−α；箭頭標示各尾的 α 或 α/2。橙色虛線是臨界值，紅色實線是觀察檢定量。α 與 p-value 都不是 H₀ 為真的機率。'))
 table_html<-function(df){heads<-paste0('<th>',esc(names(df)),'</th>',collapse='');rows<-vapply(seq_len(nrow(df)),function(i)paste0('<tr>',paste0('<td>',esc(unlist(df[i,],use.names=FALSE)),'</td>',collapse=''),'</tr>'),character(1));HTML(paste0('<div class="table-scroll"><table><thead><tr>',heads,'</tr></thead><tbody>',paste(rows,collapse=''),'</tbody></table></div>'))}
 safe_ui<-function(expr)tryCatch(expr,error=function(e)div(class='warning',conditionMessage(e)))
 show_result<-function(r,labels=c('第一組','第二組')) show_results(list(r),labels)
