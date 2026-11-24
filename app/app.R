@@ -9,7 +9,7 @@ tails<-c('雙尾：第一組 ≠ 第二組'='two','左尾：第一組 < 第二�
 methods<-c('獨立樣本 Z（母體變異數 σ² 已知）'='z','Student t（等變異數）'='pooled','Welch t（不假設等變異數）'='welch','配對 t（需配對資料）'='paired')
 card<-function(...)div(class='lab-card',...)
 hint<-function(...)p(class='hint',...)
-diagrams<-function(r)tagList(div(class='diagram-scroll',style='max-width:900px;margin:0 auto',HTML(distribution_svg(r))),hint('橙色斜線為 α 拒絕域，藍色底色為 p-value 尾機率；重疊處保留兩種標示。橙色虛線是臨界值，紫色實線是觀察檢定量。α 與 p-value 都不是 H₀ 為真的機率。'))
+diagrams<-function(r)tagList(div(class='diagram-scroll',style='max-width:900px;margin:0 auto',HTML(distribution_svg(r))),hint('深藍為 α 拒絕域，淺藍為 p-value 尾機率；重疊處顯示深藍。箭頭標示 1−α 與各尾的 α 或 α/2。橙色虛線是臨界值，紫色實線是觀察檢定量。α 與 p-value 都不是 H₀ 為真的機率。'))
 table_html<-function(df){heads<-paste0('<th>',esc(names(df)),'</th>',collapse='');rows<-vapply(seq_len(nrow(df)),function(i)paste0('<tr>',paste0('<td>',esc(unlist(df[i,],use.names=FALSE)),'</td>',collapse=''),'</tr>'),character(1));HTML(paste0('<div class="table-scroll"><table><thead><tr>',heads,'</tr></thead><tbody>',paste(rows,collapse=''),'</tbody></table></div>'))}
 safe_ui<-function(expr)tryCatch(expr,error=function(e)div(class='warning',conditionMessage(e)))
 show_result<-function(r,labels=c('第一組','第二組')) show_results(list(r),labels)
@@ -40,15 +40,23 @@ result_details<-function(r,labels){
    tags$li(paste0('比較 p = ',pfmt(r$p),' 與 α = ',r$alpha,'，',if(r$reject)'拒絕 H₀。' else '未能拒絕 H₀。')))),diagrams(r),mean_code(r))
 }
 example_choices<-c('Uber 搭車：獨立樣本 Z／Student／Welch'='uber','研究生年齡：獨立樣本比較'='age','Uber 搭車：同八人的配對 t'='paired','變異數同質檢驗：Levene 與 Brown–Forsythe'='levene')
-ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=book-test-comparison'),tags$script(src='downloads.js')),
+ui<-fluidPage(tags$head(tags$title('平均數差異檢定｜邱皓政統計互動教材'),tags$link(rel='stylesheet',href='style.css?v=compact-book-settings'),tags$script(src='downloads.js')),
  tags$head(tags$link(rel='stylesheet',href='https://hawjeng.github.io/assets/lab-return.css')),
  div(class='app-top',a(href='https://hawjeng.github.io/resources.html#statistics-apps',class='lab-return','← 返回教學與專案'),a(href='https://hawjeng.github.io/statistical-inference-lab/','區間估計與假設檢定'),a(href='https://github.com/Hawjeng/mean-difference-lab',target='_blank',rel='noopener','GitHub 原始碼')),
  div(class='app-title',p(class='eyebrow','STATISTICS LAB · COMPARING TWO MEANS'),h1('平均數差異檢定'),p('先辨識研究設計，再看標準誤、拒絕域與尾機率。')),
  tabsetPanel(id='main_tab',selected='原理與流程',
   tabPanel('原理與流程',includeHTML('www/lesson.html')),
-  tabPanel('課本範例',card(h3('從各節資料開始'),selectInput('example','範例主題',example_choices),
-   div(class='book-controls',numericInput('ba','顯著水準 α',.05,min=.001,max=.2,step=.005),selectInput('bt','檢定方向',tails),numericInput('bd','虛無假設差異 Δ₀',0,step=.1)),
-   conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',c(methods[1],'獨立樣本 t'='t'),selected='t'),conditionalPanel("input.bm == 'z'",div(class='book-controls',numericInput('bs1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('bs2','第二組已知母體變異數 σ₂²',2,min=0)),hint('直接輸入變異數。例如 σ=2 時，這裡應輸入 σ²=4。兩組變異數可以不同。'))),
+  tabPanel('課本範例',card(div(class='book-setup',h3('從各節資料開始'),
+   div(class='book-primary',
+    selectInput('example','範例主題',example_choices),
+    conditionalPanel("input.example != 'paired' && input.example != 'levene'",selectInput('bm','方法',c(methods[1],'獨立樣本 t'='t'),selected='t'))),
+   div(class='book-settings',
+    numericInput('ba','顯著水準 α',.05,min=.001,max=.2,step=.005),
+    selectInput('bt','檢定方向',tails),
+    numericInput('bd','虛無假設差異 Δ₀',0,step=.1)),
+   conditionalPanel("input.example != 'paired' && input.example != 'levene' && input.bm == 'z'",
+    div(class='book-known-variances',numericInput('bs1','第一組已知母體變異數 σ₁²',2,min=0),numericInput('bs2','第二組已知母體變異數 σ₂²',2,min=0)),
+    hint('直接輸入變異數。例如 σ=2 時，這裡應輸入 σ²=4。兩組變異數可以不同。'))),
    uiOutput('book_question'),uiOutput('book_result'),tags$details(tags$summary('原始數據與試算表'),tableOutput('book_raw'),uiOutput('book_links')))),
   tabPanel('調查研究',card(h3('兩組平均數差異'),p('713 筆調查資料，以分組摘要在瀏覽器內計算。每次只比較兩個互斥群組。'),
    div(class='survey-selectors',selectInput('group','分組方式',setNames(names(survey$groups),vapply(survey$groups,function(g)g$label,character(1)))),selectInput('variable','分析變數',setNames(names(survey$variables),vapply(survey$variables,function(v)v$label,character(1))),selected='B1'),selectInput('g1','第一組',survey$groups$zodiac$categories,selected='水瓶座'),selectInput('g2','第二組',survey$groups$zodiac$categories,selected='雙魚座')),
@@ -161,4 +169,3 @@ server<-function(input,output,session){
  observeEvent(input$answers_download,{content<-paste0('<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><title>平均數差異檢定習作詳解</title><style>body{font:16px/1.8 Arial,sans-serif;max-width:1100px;margin:30px auto;padding:20px}table{border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd}details{margin:20px 0}svg{max-width:550px}details>summary{font-weight:bold}</style><h1>平均數差異檢定習作詳解</h1>',as.character(exercises_ui()),'</html>');content<-gsub('<details>','<details open>',content,fixed=TRUE);session$sendCustomMessage('download-file',list(content=content,name='平均數差異檢定習作詳解.html',mime='text/html;charset=utf-8'))})
 }
 shinyApp(ui,server)
-

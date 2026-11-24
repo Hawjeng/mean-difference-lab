@@ -40,7 +40,9 @@ close(mean_ci(summarize(b$uber$a),method='z',sigma=0),rep(mean(b$uber$a),2))
 cat('PASS: group mean t/Z CI endpoints, 95%/99% confidence, SVG labels and unavailable intervals.\n')
 for(m in c('z','welch'))for(tail in c('two','left','right')){
  r<-test_raw(b$uber$a,b$uber$b,m,tail=tail,sigma1=sqrt(2),sigma2=sqrt(2));svg<-distribution_svg(r)
- stopifnot(length(gregexpr('<svg ',svg,fixed=TRUE)[[1]])==1,grepl('橙色斜線面積 = α',svg,fixed=TRUE),grepl(paste0('藍色底色面積 = p-value = ',pfmt(r$p)),svg,fixed=TRUE))
+ stopifnot(length(gregexpr('<svg ',svg,fixed=TRUE)[[1]])==1,grepl('深藍面積 = α',svg,fixed=TRUE),grepl(paste0('淺藍面積 = p-value = ',pfmt(r$p)),svg,fixed=TRUE),
+  grepl('1−α = 0.950',svg,fixed=TRUE),grepl(if(tail=='two')'α/2 = 0.025' else 'α = 0.050',svg,fixed=TRUE),
+  grepl('marker-end="url(#area-arrow-',svg,fixed=TRUE),grepl('#1e40af',svg,fixed=TRUE),grepl('#bfdbfe',svg,fixed=TRUE),!grepl('alpha-hatch',svg,fixed=TRUE))
  stopifnot(!grepl('-statistic',svg,fixed=TRUE),!grepl(' 分配',svg,fixed=TRUE))
  if(m=='z'){
   ticks<-regmatches(svg,gregexpr('data-value="[^"]+"',svg))[[1]];vals<-as.numeric(sub('"$','',sub('data-value="','',ticks,fixed=TRUE)))
@@ -48,4 +50,3 @@ for(m in c('z','welch'))for(tail in c('two','left','right')){
  }else stopifnot(grepl(paste0('>t(df=',fmt(r$df,2),' ≈ ',floor(r$df+.5),')</text>'),svg,fixed=TRUE))
 }
 cat('PASS: unified alpha/p SVG for both distributions and all tails, half-unit Z ticks and right-end axis labels.\n')
-
