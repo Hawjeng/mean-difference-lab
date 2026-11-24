@@ -89,7 +89,7 @@ distribution_svg<-function(r){
   out<-c(out,prob_text(px,211,paste0(if(r$tail=='two')'p/2 = ' else 'p = ',pfmt(if(r$tail=='two')r$p/2 else r$p)),'#c97908',13),p_area_arrow(px,220,X(target),245-(245-Y(pdf(target)))*.45))
  }
  for(cv in cvs)out<-c(out,sprintf('<path d="M%.2f 95 V245" stroke="#c16a16" stroke-width="1.6" stroke-dasharray="5 4"/>',X(cv)),svg_text(X(cv),86,paste0(if(cv<0)'−' else '+',if(r$distribution=='z')'zcv' else 'tcv',' = ',fmt(cv)),'#c16a16',12))
- out<-c(out,svg_text(X(r$stat)+if(r$stat<0)6 else -6,112,paste0(r$distribution,'_obt = ',fmt(r$stat)),'#dc2626',12,if(r$stat<0)'start' else 'end'))
+ out<-c(out,svg_text(X(r$stat)+if(r$stat<0)-8 else 8,135,paste0(r$distribution,'_obt = ',fmt(r$stat)),'#dc2626',12,if(r$stat<0)'end' else 'start'))
  out<-c(out,sprintf('<path d="M%.2f 91 V245" stroke="#dc2626" stroke-width="2.2"/>',X(r$stat)),svg_text(710,250,if(r$distribution=='z')'z' else paste0('t(',format(round(r$df,2),trim=TRUE),')'),'#183d47',12,'start'),
  svg_text(max(240,min(670,X(r$stat))),287,ci_label,'#dc2626',12),
  svg_text(430,309,'此雙側 CI 適用於雙尾比較，不適用於單尾比較情境。','#c32d3b',12),
