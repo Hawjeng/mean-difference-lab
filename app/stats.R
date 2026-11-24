@@ -65,8 +65,8 @@ distribution_svg<-function(r){
  }
  out<-c(out,shade(alpha_mask,'#1e40af'),shade(p_mask,'#bfdbfe'),shade(alpha_mask & p_mask,'url(#alpha-overlap)'))
  out<-c(out,sprintf('<polyline points="%s" fill="none" stroke="#344b58" stroke-width="2"/><path d="M62 245 H698" stroke="#344b58"/>',paste(sprintf('%.2f,%.2f',X(xx),Y(dens)),collapse=' ')))
- ticks<-if(r$distribution=='z')seq(ceiling(-hi*2)/2,floor(hi*2)/2,by=.5) else pretty(c(-hi,hi),n=8)
- for(tick in ticks)if(tick>=-hi&&tick<=hi)out<-c(out,sprintf('<path class="axis-tick" data-value="%s" d="M%.2f 245 V250" stroke="#536c76"/>',tick,X(tick)),svg_text(X(tick),268,if(r$distribution=='z')fmt(tick,1) else format(tick,trim=TRUE),'#536c76',11))
+ ticks<-seq(ceiling(-hi),floor(hi),by=1)
+ for(tick in ticks)if(tick>=-hi&&tick<=hi)out<-c(out,sprintf('<path class="axis-tick" data-value="%s" d="M%.2f 245 V250" stroke="#536c76"/>',tick,X(tick)),svg_text(X(tick),268,format(tick,trim=TRUE),'#536c76',11))
  ci_half<-r$se*(if(r$distribution=='z')qnorm(.975) else qt(.975,r$df))
  ci_label<-paste0(if(r$method=='one')'平均數' else '平均數差異','的 95% CI（原始單位）：[',fmt(r$difference-ci_half),', ',fmt(r$difference+ci_half),']')
  cvs<-if(r$tail=='two')c(-r$critical,r$critical) else if(r$tail=='left')-r$critical else r$critical
